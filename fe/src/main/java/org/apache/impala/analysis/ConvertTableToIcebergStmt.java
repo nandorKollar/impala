@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.utils.MetaStoreUtils;
+import org.apache.iceberg.TableProperties;
 import org.apache.impala.analysis.QueryStringBuilder.Create;
 import org.apache.impala.analysis.QueryStringBuilder.Drop;
 import org.apache.impala.analysis.QueryStringBuilder.Invalidate;
@@ -111,20 +112,40 @@ public class ConvertTableToIcebergStmt extends StatementBase implements SingleTa
 
     checkColumnTypeCompatibility(table);
 
-    if (properties_.size() > 1 ||
-        properties_.keySet().stream().anyMatch(
-            key -> !key.equalsIgnoreCase(IcebergTable.ICEBERG_CATALOG)) ) {
-      throw new AnalysisException(String.format(
-          "CONVERT TO ICEBERG only accepts '%s' as TBLPROPERTY.",
-          IcebergTable.ICEBERG_CATALOG));
-    }
-
-    if (TIcebergCatalog.HADOOP_CATALOG == IcebergUtil.getTIcebergCatalog(properties_)) {
-      throw new AnalysisException("The Hadoop Catalog is not supported because the " +
-          "location may change");
-    }
+    checkProperties();
 
     createSubQueryStrings((FeFsTable) table);
+  }
+
+  private void checkProperties() throws AnalysisException {
+    for (Map.Entry<String, String> entry : properties_.entrySet()) {
+      String key = entry.getKey();
+      String value = entry.getValue();
+      if (IcebergTable.ICEBERG_CATALOG.equalsIgnoreCase(key)) {
+        if (TIcebergCatalog.HADOOP_CATALOG == IcebergUtil.getTIcebergCatalog(value)) {
+          throw new AnalysisException("The Hadoop Catalog is not supported " +
+              "because the location may change");
+        }
+        continue;
+      }
+
+      if (TableProperties.FORMAT_VERSION.equalsIgnoreCase(key)) {
+        try {
+          int formatVersion = Integer.parseInt(value);
+          if (formatVersion == TableProperties.FORMAT_VERSION_1
+              || formatVersion == TableProperties.FORMAT_VERSION_2) {
+            continue;
+          }
+          throw new AnalysisException(
+              String.format("Unsupported Iceberg format version '%s'.", formatVersion));
+        } catch (NumberFormatException e) {
+          throw new AnalysisException(
+              String.format("Invalid Iceberg format version '%s'.", value));
+        }
+      }
+      throw new AnalysisException(
+          String.format("CONVERT TO ICEBERG doesn't accept '%s' as TBLPROPERTY.", key));
+    }
   }
 
   private void checkColumnTypeCompatibility(FeTable table) throws AnalysisException {
@@ -173,7 +194,7 @@ public class ConvertTableToIcebergStmt extends StatementBase implements SingleTa
           .property(Table.TBL_PROP_EXTERNAL_TABLE_PURGE, "true").build();
     } else {
       // In HiveCatalog we invoke an IM after creating the table to immediately propagate
-      // the existance of the new Iceberg table and avoid timing issues.
+      // the existence of the new Iceberg table and avoid timing issues.
       invalidateMetadataQuery_ = Invalidate.builder()
           .table(tableName_.toString())
           .build();
