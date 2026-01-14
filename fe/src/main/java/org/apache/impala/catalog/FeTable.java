@@ -227,15 +227,4 @@ public interface FeTable {
    * @return the timestamp when the table is last loaded or reloaded in catalogd.
    */
   long getLastLoadedTimeMs();
-
-  /**
-   * Returns a list of thrift column descriptors ordered by position.
-   */
-  default List<TColumnDescriptor> getTColumnDescriptors() {
-    List<TColumnDescriptor> colDescs = new ArrayList<>();
-    for (Column col: getColumns()) {
-      colDescs.add(col.toDescriptor());
-    }
-    return colDescs;
-  }
 }
