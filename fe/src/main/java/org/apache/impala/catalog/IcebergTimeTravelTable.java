@@ -165,7 +165,7 @@ public class IcebergTimeTravelTable
   public TTableDescriptor toThriftDescriptor(
       int tableId, Set<Long> referencedPartitions) {
     TTableDescriptor desc = new TTableDescriptor(tableId, TTableType.ICEBERG_TABLE,
-        getTColumnDescriptors(), 0, getName(), getDb().getName());
+        getSchema().toTColumnDescriptors(), 0, getName(), getDb().getName());
     desc.setIcebergTable(Utils.getTIcebergTable(this, ThriftObjectType.DESCRIPTOR_ONLY));
     desc.setHdfsTable(transformToTHdfsTable(false, ThriftObjectType.DESCRIPTOR_ONLY));
     return desc;
@@ -519,6 +519,11 @@ class ForwardingFeIcebergTable implements FeIcebergTable {
   @Override
   public List<String> getColumnNames() {
     return base.getColumnNames();
+  }
+
+  @Override
+  public TableSchema getSchema() {
+    return base.getSchema();
   }
 
   @Override

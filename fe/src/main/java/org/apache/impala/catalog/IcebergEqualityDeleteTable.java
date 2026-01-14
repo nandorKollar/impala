@@ -68,4 +68,9 @@ public class IcebergEqualityDeleteTable extends IcebergDeleteTable  {
   public List<VirtualColumn> getVirtualColumns() {
     return Arrays.asList(VirtualColumn.ICEBERG_DATA_SEQUENCE_NUMBER);
   }
+
+  @Override
+  public TableSchema getSchema() {
+    return baseTable_.getSchema();
+  }
 }

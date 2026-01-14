@@ -2137,7 +2137,7 @@ public class HdfsTable extends Table implements FeFsTable {
     // Create thrift descriptors to send to the BE. The BE does not
     // need any information below the THdfsPartition level.
     TTableDescriptor tableDesc = new TTableDescriptor(tableId, TTableType.HDFS_TABLE,
-        getTColumnDescriptors(), numClusteringCols_, name_, db_.getName());
+        getSchema().toTColumnDescriptors(), numClusteringCols_, name_, db_.getName());
     tableDesc.setHdfsTable(getTHdfsTable(ThriftObjectType.DESCRIPTOR_ONLY,
         referencedPartitions));
     return tableDesc;

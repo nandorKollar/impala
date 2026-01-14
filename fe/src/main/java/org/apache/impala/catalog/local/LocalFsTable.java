@@ -313,7 +313,7 @@ public class LocalFsTable extends LocalTable implements FeFsTable {
   public TTableDescriptor toThriftDescriptor(int tableId,
       Set<Long> referencedPartitions) {
     TTableDescriptor tableDesc = new TTableDescriptor(tableId, TTableType.HDFS_TABLE,
-        getTColumnDescriptors(),
+        getSchema().toTColumnDescriptors(),
         getNumClusteringCols(), name_, db_.getName());
     tableDesc.setHdfsTable(toTHdfsTable(referencedPartitions,
         ThriftObjectType.DESCRIPTOR_ONLY));

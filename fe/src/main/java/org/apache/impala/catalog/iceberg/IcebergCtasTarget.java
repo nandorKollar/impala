@@ -48,6 +48,7 @@ import org.apache.impala.catalog.IcebergColumn;
 import org.apache.impala.catalog.IcebergContentFileStore;
 import org.apache.impala.catalog.IcebergStructField;
 import org.apache.impala.catalog.IcebergTable;
+import org.apache.impala.catalog.TableSchema;
 import org.apache.impala.catalog.local.LocalDb;
 import org.apache.impala.catalog.local.LocalFsTable;
 import org.apache.impala.common.ImpalaRuntimeException;
@@ -288,7 +289,7 @@ public class IcebergCtasTarget extends CtasTargetTable implements FeIcebergTable
   public TTableDescriptor toThriftDescriptor(int tableId,
       Set<Long> referencedPartitions) {
     TTableDescriptor desc = new TTableDescriptor(tableId, TTableType.ICEBERG_TABLE,
-        getTColumnDescriptors(),
+        getSchema().toTColumnDescriptors(),
         getNumClusteringCols(),
         getName(), db_.getName());
 
@@ -344,5 +345,10 @@ public class IcebergCtasTarget extends CtasTargetTable implements FeIcebergTable
   @Override
   public String getTableComment() {
     return MetadataOp.getTableComment(msTable_);
+  }
+
+  @Override
+  public TableSchema getSchema() {
+    throw new UnsupportedOperationException("Not yet implemented");
   }
 }

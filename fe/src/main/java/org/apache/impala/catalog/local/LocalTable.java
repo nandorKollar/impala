@@ -47,6 +47,7 @@ import org.apache.impala.catalog.StructField;
 import org.apache.impala.catalog.StructType;
 import org.apache.impala.catalog.SystemTable;
 import org.apache.impala.catalog.TableLoadingException;
+import org.apache.impala.catalog.TableSchema;
 import org.apache.impala.catalog.VirtualColumn;
 import org.apache.impala.catalog.local.MetaProvider.TableMetaRef;
 import org.apache.impala.catalog.paimon.PaimonColumn;
@@ -477,5 +478,10 @@ abstract class LocalTable implements FeTable {
       Preconditions.checkArgument(colsByPos_.get(c.getPosition()) == c);
       return c.getPosition() < numClusteringCols_;
     }
+  }
+
+  @Override
+  public TableSchema getSchema() {
+    throw new UnsupportedOperationException("Not yet implemented");
   }
 }

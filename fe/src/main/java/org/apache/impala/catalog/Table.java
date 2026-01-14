@@ -224,6 +224,8 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
   // In non test environment, value should remain unchanged at -1.0.
   protected double testMetadataScale_ = -1.0;
 
+  private TableSchema schema;
+
   protected Table(org.apache.hadoop.hive.metastore.api.Table msTable, Db db,
       String name, String owner) {
     msTable_ = msTable;
@@ -1138,6 +1140,11 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
     if (lastSyncedEventId_ < eventId && isSetLastSyncEventId) {
       setLastSyncedEventId(eventId);
     }
+  }
+
+  @Override
+  public TableSchema getSchema() {
+    return schema;
   }
 
   public double getDebugMetadataScale() { return testMetadataScale_; }

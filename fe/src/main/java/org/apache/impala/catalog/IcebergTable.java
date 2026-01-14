@@ -787,7 +787,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
   public TTableDescriptor toThriftDescriptor(int tableId,
       Set<Long> referencedPartitions) {
     TTableDescriptor desc = new TTableDescriptor(tableId, TTableType.ICEBERG_TABLE,
-        getTColumnDescriptors(), numClusteringCols_, name_, db_.getName());
+        getSchema().toTColumnDescriptors(), numClusteringCols_, name_, db_.getName());
     desc.setIcebergTable(Utils.getTIcebergTable(this, ThriftObjectType.DESCRIPTOR_ONLY));
     desc.setHdfsTable(transformToTHdfsTable(false, ThriftObjectType.DESCRIPTOR_ONLY));
     return desc;

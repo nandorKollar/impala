@@ -79,7 +79,7 @@ public class LocalPaimonTable extends LocalTable implements FePaimonTable {
   public TTableDescriptor toThriftDescriptor(
       int tableId, Set<Long> referencedPartitions) {
     TTableDescriptor tableDescriptor = new TTableDescriptor(tableId,
-        TTableType.PAIMON_TABLE, getTColumnDescriptors(), 0, name_, db_.getName());
+        TTableType.PAIMON_TABLE, getSchema().toTColumnDescriptors(), 0, name_, db_.getName());
     try {
       tableDescriptor.setPaimonTable(PaimonUtil.getTPaimonTable(this));
     } catch (IOException e) { throw new RuntimeException(e); }

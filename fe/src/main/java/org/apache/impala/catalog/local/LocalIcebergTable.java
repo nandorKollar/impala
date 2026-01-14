@@ -251,7 +251,7 @@ public class LocalIcebergTable extends LocalTable implements FeIcebergTable {
   public TTableDescriptor toThriftDescriptor(int tableId,
       Set<Long> referencedPartitions) {
     TTableDescriptor desc = new TTableDescriptor(tableId, TTableType.ICEBERG_TABLE,
-        getTColumnDescriptors(),
+        getSchema().toTColumnDescriptors(),
         getNumClusteringCols(),
         name_, db_.getName());
     desc.setIcebergTable(Utils.getTIcebergTable(this, ThriftObjectType.DESCRIPTOR_ONLY));

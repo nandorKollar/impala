@@ -76,7 +76,7 @@ public class PaimonTable extends Table implements FePaimonTable {
   public TTableDescriptor toThriftDescriptor(
       int tableId, Set<Long> referencedPartitions) {
     TTableDescriptor tableDescriptor =
-        new TTableDescriptor(tableId, TTableType.PAIMON_TABLE, getTColumnDescriptors(),
+        new TTableDescriptor(tableId, TTableType.PAIMON_TABLE, getSchema().toTColumnDescriptors(),
             numClusteringCols_, name_, db_.getName());
     try {
       tableDescriptor.setPaimonTable(PaimonUtil.getTPaimonTable(this));

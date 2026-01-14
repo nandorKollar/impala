@@ -502,7 +502,7 @@ public class KuduTable extends Table implements FeKuduTable {
   public TTableDescriptor toThriftDescriptor(int tableId,
       Set<Long> referencedPartitions) {
     TTableDescriptor desc = new TTableDescriptor(tableId, TTableType.KUDU_TABLE,
-        getTColumnDescriptors(), numClusteringCols_, name_, db_.getName());
+        getSchema().toTColumnDescriptors(), numClusteringCols_, name_, db_.getName());
     desc.setKuduTable(getTKuduTable());
     return desc;
   }

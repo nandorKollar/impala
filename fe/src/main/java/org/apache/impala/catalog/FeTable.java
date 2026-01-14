@@ -128,6 +128,8 @@ public interface FeTable {
    */
   List<String> getColumnNames();
 
+  TableSchema getSchema();
+
   /**
    * @return SQL constraints for the table.
    */

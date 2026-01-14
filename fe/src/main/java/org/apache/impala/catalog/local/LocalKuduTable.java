@@ -206,7 +206,7 @@ public class LocalKuduTable extends LocalTable implements FeKuduTable {
       Set<Long> referencedPartitions) {
     // TODO(todd): the old implementation passes kuduTableName_ instead of name below.
     TTableDescriptor desc = new TTableDescriptor(tableId, TTableType.KUDU_TABLE,
-        getTColumnDescriptors(),
+        getSchema().toTColumnDescriptors(),
         getNumClusteringCols(),
         name_, db_.getName());
     desc.setKuduTable(toTKuduTable());

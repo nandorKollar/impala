@@ -63,4 +63,9 @@ public class IcebergPositionDeleteTable extends IcebergDeleteTable  {
     colStats.max_size = pos.getType().getSlotSize();
     return colStats;
   }
+
+  @Override
+  public TableSchema getSchema() {
+    return baseTable_.getSchema();
+  }
 }

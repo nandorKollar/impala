@@ -27,6 +27,7 @@ import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.serde2.SerDeException;
 import org.apache.impala.catalog.Column;
 import org.apache.impala.catalog.FeHBaseTable;
+import org.apache.impala.catalog.TableSchema;
 import org.apache.impala.catalog.local.MetaProvider.TableMetaRef;
 import org.apache.impala.common.Pair;
 import org.apache.impala.thrift.TResultSet;
@@ -68,7 +69,7 @@ public class LocalHbaseTable extends LocalTable implements FeHBaseTable {
       Set<Long> referencedPartitions) {
     TTableDescriptor tableDescriptor =
         new TTableDescriptor(tableId, TTableType.HBASE_TABLE,
-            getTColumnDescriptors(), 1, getHBaseTableName(),
+            getSchema().toTColumnDescriptors(), 1, getHBaseTableName(),
             db_.getName());
     tableDescriptor.setHbaseTable(Util.getTHBaseTable(this));
     return tableDescriptor;
@@ -103,6 +104,11 @@ public class LocalHbaseTable extends LocalTable implements FeHBaseTable {
   @Override
   public List<Column> getColumnsInHiveOrder() {
     return getColumns();
+  }
+
+  @Override
+  public TableSchema getSchema() {
+    throw new RuntimeException("Hbase table doesn't have a schema");
   }
 
   /**
