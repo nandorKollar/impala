@@ -126,7 +126,7 @@ public class HBaseTable extends Table implements FeHBaseTable {
       setTableStats(msTable_);
       // since we don't support composite hbase rowkeys yet, all hbase tables have a
       // single clustering col
-      numClusteringCols_ = 1;
+      getSchema().setNumClusteringCols(1);
       loadAllColumnStats(client, catalogTimeline);
       refreshLastUsedTime();
     } catch (Exception e) {
@@ -170,7 +170,7 @@ public class HBaseTable extends Table implements FeHBaseTable {
       Set<Long> referencedPartitions) {
     TTableDescriptor tableDescriptor =
         new TTableDescriptor(tableId, TTableType.HBASE_TABLE, getSchema().toTColumnDescriptors(),
-            numClusteringCols_, name_, db_.getName());
+          getSchema().getNumClusteringCols(), name_, db_.getName());
     tableDescriptor.setHbaseTable(Util.getTHBaseTable(this));
     return tableDescriptor;
   }

@@ -634,7 +634,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
 
   private Set<Integer> collectFieldIdsWithNdvStats() {
     Set<Integer> res = new HashSet<>();
-    for (Column col : colsByPos_) {
+    for (Column col : getSchema().getColumns()) {
       if (col.getStats().hasNumDistinctValues()) {
         IcebergColumn iCol = (IcebergColumn) col;
         res.add(iCol.getFieldId());
@@ -710,12 +710,9 @@ public class IcebergTable extends Table implements FeIcebergTable {
   public void addColumn(Column col) {
     Preconditions.checkState(col instanceof IcebergColumn);
     IcebergColumn iCol = (IcebergColumn) col;
+    // TODO: move this to schema too
     icebergFieldIdToCol_.put(iCol.getFieldId(), iCol);
-    colsByPos_.add(iCol);
-    colsByName_.put(iCol.getName().toLowerCase(), col);
-    ((StructType) type_.getItemType()).addField(
-        new IcebergStructField(col.getName(), col.getType(), col.getComment(),
-            iCol.getFieldId()));
+    getSchema().addColumn(col);
   }
 
   @Override
@@ -787,7 +784,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
   public TTableDescriptor toThriftDescriptor(int tableId,
       Set<Long> referencedPartitions) {
     TTableDescriptor desc = new TTableDescriptor(tableId, TTableType.ICEBERG_TABLE,
-        getSchema().toTColumnDescriptors(), numClusteringCols_, name_, db_.getName());
+        getSchema().toTColumnDescriptors(), getSchema().getNumClusteringCols(), name_, db_.getName());
     desc.setIcebergTable(Utils.getTIcebergTable(this, ThriftObjectType.DESCRIPTOR_ONLY));
     desc.setHdfsTable(transformToTHdfsTable(false, ThriftObjectType.DESCRIPTOR_ONLY));
     return desc;

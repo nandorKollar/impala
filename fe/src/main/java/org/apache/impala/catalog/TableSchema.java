@@ -56,14 +56,14 @@ public final class TableSchema {
         return c.getPosition() < numClusteringCols_;
     }
 
-    private void addColumn(Column col) {
+    public void addColumn(Column col) {
         colsByPos_.add(col);
         colsByName_.put(col.getName().toLowerCase(), col);
         ((StructType) type_.getItemType()).addField(
                 new StructField(col.getName(), col.getType(), col.getComment()));
     }
 
-    public void clearColumns() {
+    void clearColumns() {
         colsByPos_.clear();
         colsByName_.clear();
         ((StructType) type_.getItemType()).clearFields();

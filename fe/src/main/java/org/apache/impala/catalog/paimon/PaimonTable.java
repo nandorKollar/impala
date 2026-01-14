@@ -77,7 +77,7 @@ public class PaimonTable extends Table implements FePaimonTable {
       int tableId, Set<Long> referencedPartitions) {
     TTableDescriptor tableDescriptor =
         new TTableDescriptor(tableId, TTableType.PAIMON_TABLE, getSchema().toTColumnDescriptors(),
-            numClusteringCols_, name_, db_.getName());
+            getSchema().getNumClusteringCols(), name_, db_.getName());
     try {
       tableDescriptor.setPaimonTable(PaimonUtil.getTPaimonTable(this));
     } catch (IOException e) { throw new RuntimeException(e); }
@@ -187,7 +187,7 @@ public class PaimonTable extends Table implements FePaimonTable {
         col.setPosition(colPos++);
         addColumn(col);
       }
-      numClusteringCols_ = impalaPartitionedFields.size();
+      getSchema().setNumClusteringCols(impalaPartitionedFields.size());
       // sync table properties from underlying paimon table
       final Map<String, String> paimonProps =
           Maps.newHashMap(getPaimonApiTable().options());
@@ -219,11 +219,7 @@ public class PaimonTable extends Table implements FePaimonTable {
   public void addColumn(Column col) {
     Preconditions.checkState(col instanceof PaimonColumn);
     PaimonColumn pCol = (PaimonColumn) col;
-    colsByPos_.add(pCol);
-    colsByName_.put(pCol.getName().toLowerCase(), col);
-    ((StructType) type_.getItemType())
-        .addField(new PaimonStructField(col.getName(), col.getType(), col.getComment(),
-            pCol.getFieldId(), pCol.isNullable()));
+    getSchema().addColumn(pCol);
   }
 
   /**

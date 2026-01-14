@@ -306,7 +306,7 @@ public class KuduTable extends Table implements FeKuduTable {
     // This is set to 0 for Kudu tables.
     // TODO: Change this to reflect the number of pk columns and modify all the
     // places (e.g. insert stmt) that currently make use of this parameter.
-    numClusteringCols_ = 0;
+    getSchema().setNumClusteringCols(0);
     org.apache.kudu.client.KuduTable kuduTable = null;
     // Connect to Kudu to retrieve table metadata
     KuduClient kuduClient = KuduUtil.getKuduClient(getKuduMasterHosts(), catalogTimeline);
@@ -321,7 +321,7 @@ public class KuduTable extends Table implements FeKuduTable {
     Preconditions.checkNotNull(kuduTable);
 
     loadSchema(kuduTable);
-    Preconditions.checkState(!colsByPos_.isEmpty());
+    Preconditions.checkState(!getSchema().getColumns().isEmpty());
     partitionBy_ = Utils.loadPartitionByParams(kuduTable);
     catalogTimeline.markEvent("Loaded Kudu table schema");
   }
@@ -502,7 +502,7 @@ public class KuduTable extends Table implements FeKuduTable {
   public TTableDescriptor toThriftDescriptor(int tableId,
       Set<Long> referencedPartitions) {
     TTableDescriptor desc = new TTableDescriptor(tableId, TTableType.KUDU_TABLE,
-        getSchema().toTColumnDescriptors(), numClusteringCols_, name_, db_.getName());
+        getSchema().toTColumnDescriptors(), getSchema().getNumClusteringCols(), name_, db_.getName());
     desc.setKuduTable(getTKuduTable());
     return desc;
   }

@@ -350,7 +350,7 @@ public class HdfsTable extends Table implements FeFsTable {
       Db db, String name, String owner) {
     super(msTbl, db, name, owner);
     partitionLocationCompressor_ =
-        new HdfsPartitionLocationCompressor(numClusteringCols_);
+        new HdfsPartitionLocationCompressor(getNumClusteringCols());
   }
 
   @Override // FeFsTable
@@ -361,7 +361,7 @@ public class HdfsTable extends Table implements FeFsTable {
   @Override // FeFsTable
   public boolean isCacheable() {
     if (!isLocationCacheable()) return false;
-    if (!isMarkedCached() && numClusteringCols_ > 0) {
+    if (!isMarkedCached() && getSchema().getNumClusteringCols() > 0) {
       for (FeFsPartition partition: partitionMap_.values()) {
         if (!partition.isCacheable()) {
           return false;
@@ -560,11 +560,11 @@ public class HdfsTable extends Table implements FeFsTable {
    */
   private void addColumnsFromFieldSchemas(List<FieldSchema> fieldSchemas)
       throws TableLoadingException {
-    int pos = colsByPos_.size();
+    int pos = getSchema().getColumns().size();
     for (FieldSchema s: fieldSchemas) {
       Type type = parseColumnType(s);
       // Check if we support partitioning on columns of such a type.
-      if (pos < numClusteringCols_ && !type.supportsTablePartitioning()) {
+      if (pos < getSchema().getNumClusteringCols() && !type.supportsTablePartitioning()) {
         throw new TableLoadingException(
             String.format("Failed to load metadata for table '%s' because of " +
                 "unsupported partition-column type '%s' in partition column '%s'",
@@ -590,7 +590,7 @@ public class HdfsTable extends Table implements FeFsTable {
    */
   private void addColumnsForFullAcidTable(List<FieldSchema> fieldSchemas)
       throws TableLoadingException {
-    addColumn(AcidUtils.getRowIdColumnType(colsByPos_.size()));
+    addColumn(AcidUtils.getRowIdColumnType(getSchema().getColumns().size()));
     addColumnsFromFieldSchemas(fieldSchemas);
   }
 
@@ -610,7 +610,7 @@ public class HdfsTable extends Table implements FeFsTable {
     nullPartitionIds_.clear();
     if (isStoredInImpaladCatalogCache()) {
       // Initialize partitionValuesMap_ and nullPartitionIds_. Also reset column stats.
-      for (int i = 0; i < numClusteringCols_; ++i) {
+      for (int i = 0; i < getSchema().getNumClusteringCols(); ++i) {
         getColumns().get(i).getStats().setNumNulls(0);
         getColumns().get(i).getStats().setNumDistinctValues(0);
         partitionValuesMap_.add(new TreeMap<>());
@@ -997,7 +997,7 @@ public class HdfsTable extends Table implements FeFsTable {
    * Declared as protected to allow third party extension visibility.
    */
   protected void updatePartitionMdAndColStats(HdfsPartition partition) {
-    if (partition.getPartitionValues().size() != numClusteringCols_) return;
+    if (partition.getPartitionValues().size() != getSchema().getNumClusteringCols()) return;
     nameToPartitionMap_.put(partition.getPartitionName(), partition);
     if (!isStoredInImpaladCatalogCache()) return;
     for (int i = 0; i < partition.getPartitionValues().size(); ++i) {
@@ -1082,7 +1082,7 @@ public class HdfsTable extends Table implements FeFsTable {
     if (partition == null) return null;
     fileMetadataStats_.remove(partition.getFileMetadataStats());
     Preconditions.checkArgument(partition.getPartitionValues().size() ==
-        numClusteringCols_);
+        getSchema().getNumClusteringCols());
     Long partitionId = partition.getId();
     partitionMap_.remove(partitionId);
     nameToPartitionMap_.remove(partition.getPartitionName());
@@ -1819,7 +1819,7 @@ public class HdfsTable extends Table implements FeFsTable {
   }
 
   private void setUnpartitionedTableStats(HdfsPartition.Builder partBuilder) {
-    Preconditions.checkState(numClusteringCols_ == 0);
+    Preconditions.checkState(getSchema().getNumClusteringCols() == 0);
     // For unpartitioned tables set the numRows in its single partition
     // to the table's numRows.
     partBuilder.setNumRows(getNumRows());
@@ -1907,8 +1907,8 @@ public class HdfsTable extends Table implements FeFsTable {
     nonPartFieldSchemas_.addAll(msTbl.getSd().getCols());
 
     // The number of clustering columns is the number of partition keys.
-    numClusteringCols_ = msTbl.getPartitionKeys().size();
-    partitionLocationCompressor_.setClusteringColumns(numClusteringCols_);
+    getSchema().setNumClusteringCols(msTbl.getPartitionKeys().size());
+    partitionLocationCompressor_.setClusteringColumns(getSchema().getNumClusteringCols());
     clearColumns();
     // Add all columns to the table. Ordering is important: partition columns first,
     // then all other columns.
@@ -1921,7 +1921,7 @@ public class HdfsTable extends Table implements FeFsTable {
     addVirtualColumns();
     isSchemaLoaded_ = true;
     LOG.info("Loaded {} columns from HMS. Actual columns: {}",
-        nonPartFieldSchemas_.size() + numClusteringCols_, colsByPos_.size());
+        nonPartFieldSchemas_.size() + getSchema().getNumClusteringCols(), getSchema().getColumns().size());
   }
 
   /**
@@ -2070,7 +2070,7 @@ public class HdfsTable extends Table implements FeFsTable {
     super.loadFromThrift(thriftTable);
     THdfsTable hdfsTable = thriftTable.getHdfs_table();
     partitionLocationCompressor_ = new HdfsPartitionLocationCompressor(
-        numClusteringCols_, hdfsTable.getPartition_prefixes());
+        getSchema().getNumClusteringCols(), hdfsTable.getPartition_prefixes());
     hdfsBaseDir_ = hdfsTable.getHdfsBaseDir();
     nullColumnValue_ = hdfsTable.nullColumnValue;
     nullPartitionKeyValue_ = hdfsTable.nullPartitionKeyValue;
@@ -2137,7 +2137,7 @@ public class HdfsTable extends Table implements FeFsTable {
     // Create thrift descriptors to send to the BE. The BE does not
     // need any information below the THdfsPartition level.
     TTableDescriptor tableDesc = new TTableDescriptor(tableId, TTableType.HDFS_TABLE,
-        getSchema().toTColumnDescriptors(), numClusteringCols_, name_, db_.getName());
+        getSchema().toTColumnDescriptors(), getSchema().getNumClusteringCols(), name_, db_.getName());
     tableDesc.setHdfsTable(getTHdfsTable(ThriftObjectType.DESCRIPTOR_ONLY,
         referencedPartitions));
     return tableDesc;
@@ -2500,8 +2500,9 @@ public class HdfsTable extends Table implements FeFsTable {
       existingPartitions.add(partition.getPartitionValues());
     }
 
-    List<String> partitionKeys = new ArrayList<>();
-    for (int i = 0; i < numClusteringCols_; ++i) {
+    int clusteringColumCount = getSchema().getNumClusteringCols();
+    List<String> partitionKeys = new ArrayList<>(clusteringColumCount);
+    for (int i = 0; i < clusteringColumCount; ++i) {
       partitionKeys.add(getColumns().get(i).getName());
     }
     Path basePath = new Path(hdfsBaseDir_);

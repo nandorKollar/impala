@@ -99,7 +99,7 @@ public class View extends Table implements FeView {
         addColumn(col);
       }
       // These fields are irrelevant for views.
-      numClusteringCols_ = 0;
+      getSchema().setNumClusteringCols(0);
       tableStats_ = new TTableStats(-1);
       tableStats_.setTotal_file_bytes(-1);
       queryStmt_ = parseViewDef(this);
