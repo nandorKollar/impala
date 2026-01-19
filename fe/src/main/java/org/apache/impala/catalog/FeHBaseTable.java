@@ -635,7 +635,7 @@ public interface FeHBaseTable extends FeTable {
     public static THBaseTable getTHBaseTable(FeHBaseTable table) {
       THBaseTable tHbaseTable = new THBaseTable();
       tHbaseTable.setTableName(table.getHBaseTableName());
-      for (Column c : table.getColumns()) {
+      for (Column c : table.getSchema().getColumns()) {
         HBaseColumn hbaseCol = (HBaseColumn) c;
         tHbaseTable.addToFamilies(hbaseCol.getColumnFamily());
         if (hbaseCol.getColumnQualifier() != null) {

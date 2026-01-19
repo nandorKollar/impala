@@ -474,7 +474,7 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
   // stats. This method allows each table type to volunteer the set of columns we should
   // ask the metastore for in loadAllColumnStats().
   protected List<String> getColumnNamesWithHmsStats() {
-    List<Column> columns = filterColumnsNotStoredInHms(getColumns());
+    List<Column> columns = filterColumnsNotStoredInHms(getSchema().getColumns());
     return columns.stream()
         .map(col->col.getName().toLowerCase())
         .collect(Collectors.toList());
@@ -875,9 +875,6 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
   public String getTableComment() {
     return MetadataOp.getTableComment(msTable_);
   }
-
-  @Override // FeTable
-  public List<Column> getColumns() { return getSchema().getColumns(); }
 
   @Override // FeTable
   public List<VirtualColumn> getVirtualColumns() { return getSchema().getVirtualColumns(); }

@@ -72,7 +72,7 @@ public class AlterTableDropColStmt extends AlterTableStmt {
       }
     }
 
-    if (t.getColumns().size() - t.getMetaStoreTable().getPartitionKeysSize() <= 1) {
+    if (t.getSchema().getColumns().size() - t.getMetaStoreTable().getPartitionKeysSize() <= 1) {
       throw new AnalysisException(String.format(
           "Cannot drop column '%s' from %s. Tables must contain at least 1 column.",
           colName_, tableName));

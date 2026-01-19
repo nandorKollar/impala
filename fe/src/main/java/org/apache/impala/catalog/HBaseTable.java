@@ -162,7 +162,7 @@ public class HBaseTable extends Table implements FeHBaseTable {
    */
   @Override
   public List<Column> getColumnsInHiveOrder() {
-    return getColumns();
+    return getSchema().getColumns();
   }
 
   @Override

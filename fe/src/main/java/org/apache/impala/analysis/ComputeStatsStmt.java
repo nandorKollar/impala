@@ -253,8 +253,9 @@ public class ComputeStatsStmt extends StatementBase implements SingleTableStmt {
                                 .isCompute_column_minmax_stats()
         && hasAtLeastOneParquetPartition();
 
-    for (int i = startColIdx; i < table_.getColumns().size(); ++i) {
-      Column c = table_.getColumns().get(i);
+    List<Column> columns = table_.getSchema().getColumns();
+    for (int i = startColIdx; i < columns.size(); ++i) {
+      Column c = columns.get(i);
       if (validatedColumnWhitelist_ != null && !validatedColumnWhitelist_.contains(c)) {
         continue;
       }
@@ -496,7 +497,7 @@ public class ComputeStatsStmt extends StatementBase implements SingleTableStmt {
 
         long incStatMaxSize = BackendConfig.INSTANCE.getIncStatsMaxSize();
         // The size of the existing stats and the stats to be calculated
-        long statsSizeEstimate = hdfsTable.getColumns().size() *
+        long statsSizeEstimate = hdfsTable.getSchema().getColumns().size() *
             numOfAllIncStatsPartitions * HdfsTable.STATS_SIZE_PER_COLUMN_BYTES;
         if (statsSizeEstimate > incStatMaxSize) {
           LOG.error("Incremental stats size estimate for table " + hdfsTable.getName() +
@@ -877,7 +878,7 @@ public class ComputeStatsStmt extends StatementBase implements SingleTableStmt {
     // The columns derived from the Avro schema file or literal schema.
     // Inconsistencies between the Avro-schema columns and the column definitions
     // are sometimes resolved in the CREATE TABLE, and sometimes not (see below).
-    Iterator<Column> avroSchemaCols = table.getColumns().iterator();
+    Iterator<Column> avroSchemaCols = table.getSchema().getColumns().iterator();
     // Skip partition columns from 'table' since those are not present in
     // the msTable field schemas.
     for (int i = 0; i < table.getNumClusteringCols(); ++i) {

@@ -279,11 +279,6 @@ abstract class LocalTable implements FeTable {
   }
 
   @Override
-  public List<Column> getColumns() {
-    return cols_ == null ? Collections.emptyList() : cols_.colsByPos_;
-  }
-
-  @Override
   public List<Column> getColumnsInHiveOrder() {
     List<Column> columns = Lists.newArrayList(getNonClusteringColumns());
     columns = filterColumnsNotStoredInHms(columns);

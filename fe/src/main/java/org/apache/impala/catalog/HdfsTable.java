@@ -611,8 +611,9 @@ public class HdfsTable extends Table implements FeFsTable {
     if (isStoredInImpaladCatalogCache()) {
       // Initialize partitionValuesMap_ and nullPartitionIds_. Also reset column stats.
       for (int i = 0; i < getSchema().getNumClusteringCols(); ++i) {
-        getColumns().get(i).getStats().setNumNulls(0);
-        getColumns().get(i).getStats().setNumDistinctValues(0);
+        List<Column> columns = getSchema().getColumns();
+        columns.get(i).getStats().setNumNulls(0);
+        columns.get(i).getStats().setNumDistinctValues(0);
         partitionValuesMap_.add(new TreeMap<>());
         nullPartitionIds_.add(new HashSet<>());
       }
@@ -1001,7 +1002,7 @@ public class HdfsTable extends Table implements FeFsTable {
     nameToPartitionMap_.put(partition.getPartitionName(), partition);
     if (!isStoredInImpaladCatalogCache()) return;
     for (int i = 0; i < partition.getPartitionValues().size(); ++i) {
-      ColumnStats stats = getColumns().get(i).getStats();
+      ColumnStats stats = getSchema().getColumns().get(i).getStats();
       LiteralExpr literal = partition.getPartitionValues().get(i);
       // Store partitions with null partition values separately
       if (Expr.IS_NULL_LITERAL.apply(literal)) {
@@ -1107,7 +1108,7 @@ public class HdfsTable extends Table implements FeFsTable {
       return partition;
     }
     for (int i = 0; i < partition.getPartitionValues().size(); ++i) {
-      ColumnStats stats = getColumns().get(i).getStats();
+      ColumnStats stats = getSchema().getColumns().get(i).getStats();
       LiteralExpr literal = partition.getPartitionValues().get(i);
       // Check if this is a null literal.
       if (Expr.IS_NULL_LITERAL.apply(literal)) {
@@ -1172,7 +1173,7 @@ public class HdfsTable extends Table implements FeFsTable {
     FileMetadataStats newStats = new FileMetadataStats();
     for (HdfsPartition partition: partitionMap_.values()) {
       if (partition.hasIncrementalStats()) {
-        memUsageEstimate += getColumns().size() * STATS_SIZE_PER_COLUMN_BYTES;
+        memUsageEstimate += getSchema().getColumns().size() * STATS_SIZE_PER_COLUMN_BYTES;
         hasIncrementalStats_ = true;
       }
       newStats.merge(partition.getFileMetadataStats());
@@ -2503,7 +2504,7 @@ public class HdfsTable extends Table implements FeFsTable {
     int clusteringColumCount = getSchema().getNumClusteringCols();
     List<String> partitionKeys = new ArrayList<>(clusteringColumCount);
     for (int i = 0; i < clusteringColumCount; ++i) {
-      partitionKeys.add(getColumns().get(i).getName());
+      partitionKeys.add(getSchema().getColumns().get(i).getName());
     }
     Path basePath = new Path(hdfsBaseDir_);
     List<List<String>> partitionsNotInHms = new ArrayList<>();

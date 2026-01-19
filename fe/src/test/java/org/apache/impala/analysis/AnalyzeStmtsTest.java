@@ -2728,7 +2728,7 @@ public class AnalyzeStmtsTest extends AnalyzerTest {
     // Test multiple distinct aggregations.
     Table alltypesTbl = catalog_.getOrLoadTable("functional", "alltypes");
     List<String> distinctFns = new ArrayList<>();
-    for (Column col : alltypesTbl.getColumns()) {
+    for (Column col : alltypesTbl.getSchema().getColumns()) {
       distinctFns.add(String.format("count(distinct %s)", col.getName()));
     }
     // Test a single query with a count(distinct) on all columns of alltypesTbl.
@@ -2776,7 +2776,7 @@ public class AnalyzeStmtsTest extends AnalyzerTest {
     double validSamplePercs[] = new double[] { 0.0, 0.1, 0.2, 0.5, 0.8, 1.0 };
     for (double perc: validSamplePercs) {
       List<String> allAggFnCalls = new ArrayList<>();
-      for (Column col: allScalarTypes.getColumns()) {
+      for (Column col: allScalarTypes.getSchema().getColumns()) {
         String aggFnCall = String.format("sampled_ndv(%s, %s)", col.getName(), perc);
         allAggFnCalls.add(aggFnCall);
         String stmtSql = String.format("select %s from %s", aggFnCall, tblName);

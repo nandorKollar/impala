@@ -143,7 +143,7 @@ public class CatalogObjectToFromThriftTest {
     // Now try to load the thrift struct.
     Table newTable = Table.fromThrift(catalog_.getDb("functional_avro_snap"),
         thriftTable, true);
-    Assert.assertEquals(newTable.getColumns().size(), 9);
+    Assert.assertEquals(newTable.getSchema().getColumns().size(), 9);
 
     // The table schema does not match the Avro schema - it has only 2 columns.
     Assert.assertEquals(newTable.getMetaStoreTable().getSd().getCols().size(), 2);
@@ -171,7 +171,7 @@ public class CatalogObjectToFromThriftTest {
     Table newTable = Table.fromThrift(catalog_.getDb(dbName), thriftTable, true);
     Assert.assertTrue(newTable instanceof HBaseTable);
     HBaseTable newHBaseTable = (HBaseTable) newTable;
-    Assert.assertEquals(newHBaseTable.getColumns().size(), 13);
+    Assert.assertEquals(newHBaseTable.getSchema().getColumns().size(), 13);
     Assert.assertEquals(newHBaseTable.getColumn("double_col").getType(),
         Type.DOUBLE);
     Assert.assertEquals(newHBaseTable.getNumClusteringCols(), 1);
@@ -205,7 +205,7 @@ public class CatalogObjectToFromThriftTest {
     Table newTable = Table.fromThrift(catalog_.getDb(dbName), thriftTable, true);
     Assert.assertTrue(newTable instanceof HBaseTable);
     HBaseTable newHBaseTable = (HBaseTable) newTable;
-    Assert.assertEquals(newHBaseTable.getColumns().size(), 13);
+    Assert.assertEquals(newHBaseTable.getSchema().getColumns().size(), 13);
     Assert.assertEquals(newHBaseTable.getColumn("double_col").getType(),
         Type.DOUBLE);
     Assert.assertEquals(newHBaseTable.getNumClusteringCols(), 1);

@@ -2881,7 +2881,8 @@ public class CatalogOpExecutor {
     Preconditions.checkState(table.isWriteLockedByCurrentThread());
     int numColsUpdated = 0;
     try (MetaStoreClient msClient = catalog_.getMetaStoreClient(catalogTimeline)) {
-      for (Column col: table.getColumns()) {
+      List<Column> columns = table.getSchema().getColumns();
+      for (Column col: columns) {
         // Skip columns that don't have stats.
         if (!col.getStats().hasStats()) continue;
 
@@ -4647,7 +4648,7 @@ public class CatalogOpExecutor {
         tableProperties.put(IcebergTable.ICEBERG_TABLE_IDENTIFIER, identifier.toString());
       }
       List<TColumn> columns = new ArrayList<>();
-      for (Column col: srcIceTable.getColumns()) columns.add(col.toThrift());
+      for (Column col: srcIceTable.getSchema().getColumns()) columns.add(col.toThrift());
       TIcebergPartitionSpec partitionSpec = srcIceTable.getDefaultPartitionSpec()
           .toThrift();
       createIcebergTable(tbl, wantMinimalResult, response, catalogTimeline,
@@ -4676,7 +4677,7 @@ public class CatalogOpExecutor {
     createTableParams.if_not_exists = params.if_not_exists;
     createTableParams.setComment(params.getComment());
     List<TColumn> columns = new ArrayList<>();
-    for (Column col : kuduTable.getColumns()) {
+    for (Column col : kuduTable.getSchema().getColumns()) {
       // Omit cloning auto-incrementing column of Kudu table since the column will be
       // created by Kudu engine.
       if (((KuduColumn) col).isAutoIncrementing()) continue;

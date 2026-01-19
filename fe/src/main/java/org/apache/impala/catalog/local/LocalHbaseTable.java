@@ -103,7 +103,7 @@ public class LocalHbaseTable extends LocalTable implements FeHBaseTable {
 
   @Override
   public List<Column> getColumnsInHiveOrder() {
-    return getColumns();
+    return getSchema().getColumns();
   }
 
   @Override

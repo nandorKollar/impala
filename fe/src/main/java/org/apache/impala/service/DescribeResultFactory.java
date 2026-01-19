@@ -371,6 +371,6 @@ public class DescribeResultFactory {
   public static TDescribeResult buildIcebergMetadataDescribeMinimalResult(
       FeIcebergTable table, String vTableName) throws ImpalaRuntimeException {
     IcebergMetadataTable metadataTable = new IcebergMetadataTable(table, vTableName);
-    return buildIcebergDescribeMinimalResult(metadataTable.getColumns());
+    return buildIcebergDescribeMinimalResult(metadataTable.getSchema().getColumns());
   }
 }

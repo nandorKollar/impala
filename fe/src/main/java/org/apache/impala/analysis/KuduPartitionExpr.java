@@ -67,7 +67,7 @@ public class KuduPartitionExpr extends Expr {
     // to be passed to the BE.
     for (int i = 0; i < children_.size(); ++i) {
       children_.set(i, children_.get(i).castTo(
-          targetTable_.getColumns().get(partitionColPos_.get(i)).getType()));
+          targetTable_.getSchema().getColumns().get(partitionColPos_.get(i)).getType()));
     }
   }
 

@@ -96,7 +96,7 @@ public class CatalogTest {
     FeTable tbl = db.getTable(tblName);
     assertEquals(tbl.getName(), tblName);
     assertEquals(tbl.getNumClusteringCols(), numClusteringCols);
-    List<Column> cols = tbl.getColumns();
+    List<Column> cols = tbl.getSchema().getColumns();
     assertEquals(colNames.length, colTypes.length);
     assertEquals(cols.size(), colNames.length);
     Iterator<Column> it = cols.iterator();
@@ -115,7 +115,7 @@ public class CatalogTest {
     checkTableCols(db, hiveTableName, 1, hiveColNames, colTypes);
     HBaseTable tbl = (HBaseTable) db.getTable(hiveTableName);
     assertEquals(tbl.getHBaseTableName(), hbaseTableName);
-    List<Column> cols = tbl.getColumns();
+    List<Column> cols = tbl.getSchema().getColumns();
     assertEquals(colFamilies.length, colTypes.length);
     assertEquals(colQualifiers.length, colTypes.length);
     Iterator<Column> it = cols.iterator();

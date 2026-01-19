@@ -585,7 +585,7 @@ public class LocalFsTable extends LocalTable implements FeFsTable {
     // necessary.
     loadPartitionValueMap();
     for (int i = 0; i < getNumClusteringCols(); i++) {
-      ColumnStats stats = getColumns().get(i).getStats();
+      ColumnStats stats = getSchema().getColumns().get(i).getStats();
       int nonNullParts = partitionValueMap_.get(i).size();
       int nullParts = nullPartitionIds_.get(i).size();
       stats.setNumDistinctValues(nonNullParts + (nullParts > 0 ? 1 : 0));

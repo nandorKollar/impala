@@ -8,6 +8,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * This class represents the schema of a frontend table:
+ * the list of columns and their data types.
+ */
 public final class TableSchema {
     // colsByPos[i] refers to the ith column in the table. The first numClusteringCols are
     // the clustering columns.

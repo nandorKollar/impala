@@ -101,9 +101,6 @@ public abstract class CtasTargetTable implements FeTable {
   }
 
   @Override
-  public List<Column> getColumns() { return colsByPos_; }
-
-  @Override
   public List<Column> getColumnsInHiveOrder() {
     List<Column> columns = Lists.newArrayList(getNonClusteringColumns());
     columns = filterColumnsNotStoredInHms(columns);

@@ -181,7 +181,7 @@ public class KuduTable extends Table implements FeKuduTable {
    */
   @Override
   public List<Column> getColumnsInHiveOrder() {
-    return filterColumnsNotStoredInHms(getColumns());
+    return filterColumnsNotStoredInHms(getSchema().getColumns());
   }
 
   public static boolean isKuduStorageHandler(String handler) {

@@ -216,7 +216,7 @@ public abstract class FeCatalogUtils {
         table.getNumClusteringCols(), hmsPartitionValues.size());
     List<LiteralExpr> keyValues = new ArrayList<>();
     for (String partitionKey : hmsPartitionValues) {
-      Type type = table.getColumns().get(keyValues.size()).getType();
+      Type type = table.getSchema().getColumns().get(keyValues.size()).getType();
       // Deal with Hive's special NULL partition key.
       if (partitionKey.equals(table.getNullPartitionKeyValue())) {
         keyValues.add(NullLiteral.create(type));

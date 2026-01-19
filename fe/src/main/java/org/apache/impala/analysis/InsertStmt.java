@@ -341,7 +341,7 @@ public class InsertStmt extends DmlStatementBase {
     List<String> analysisColumnPermutation = columnPermutation_;
     if (analysisColumnPermutation == null) {
       analysisColumnPermutation = new ArrayList<>();
-      List<Column> tableColumns = table_.getColumns();
+      List<Column> tableColumns = table_.getSchema().getColumns();
       for (int i = numClusteringCols; i < tableColumns.size(); ++i) {
         Column c = tableColumns.get(i);
         // Omit auto-incrementing column for Kudu table since the values of the column
@@ -463,7 +463,7 @@ public class InsertStmt extends DmlStatementBase {
     Analyzer.checkTableCapability(table_, Analyzer.OperationType.WRITE);
 
     // We do not support (in|up)serting into tables with unsupported column types.
-    for (Column c: table_.getColumns()) {
+    for (Column c: table_.getSchema().getColumns()) {
       checkSupportedColumn(c, getOpName(), targetTableName_);
     }
 
@@ -551,7 +551,7 @@ public class InsertStmt extends DmlStatementBase {
             "table (%s): %s.", targetTableName_, e.getMessage()), e);
       }
       for (int colIdx = 0; colIdx < numClusteringCols; ++colIdx) {
-        Column col = fsTable.getColumns().get(colIdx);
+        Column col = fsTable.getSchema().getColumns().get(colIdx);
         // Hive 1.x has a number of issues handling BOOLEAN partition columns (see HIVE-6590).
         // Instead of working around the Hive bugs, INSERT is disabled for BOOLEAN
         // partitions in Impala when built against Hive 1. HIVE-6590 is currently resolved,
@@ -708,7 +708,7 @@ public class InsertStmt extends DmlStatementBase {
       int numStaticPartitionExprs) throws AnalysisException {
     // Check that all required cols are mentioned by the permutation and partition clauses
     if (selectExprTargetColumns.size() + numStaticPartitionExprs !=
-        table_.getColumns().size()) {
+        table_.getSchema().getColumns().size()) {
       // We've already ruled out too many columns in the permutation and partition clauses
       // by checking that there are no duplicates and that every column mentioned actually
       // exists. So all columns aren't mentioned in the query.
@@ -737,7 +737,7 @@ public class InsertStmt extends DmlStatementBase {
         throw new AnalysisException(String.format(
             "Target table '%s' has %s columns (%s) than the SELECT / VALUES clause %s" +
             " (%s)", table_.getFullName(), comparator,
-            table_.getColumns().size(), partitionClause, totalColumnsMentioned));
+            table_.getSchema().getColumns().size(), partitionClause, totalColumnsMentioned));
       } else {
         String partitionPrefix =
             (partitionKeyValues_ == null) ? "mentions" : "and PARTITION clause mention";
@@ -757,7 +757,7 @@ public class InsertStmt extends DmlStatementBase {
     Preconditions.checkState(table_ instanceof FeKuduTable);
     List<String> keyColumns = ((FeKuduTable) table_).getPrimaryKeyColumnNames();
     List<String> missingKeyColumnNames = new ArrayList<>();
-    for (Column column : table_.getColumns()) {
+    for (Column column : table_.getSchema().getColumns()) {
       Preconditions.checkState(column instanceof KuduColumn);
       // Omit auto-incrementing column for Kudu table since the values of the column
       // will be assigned by Kudu engine.
@@ -785,7 +785,7 @@ public class InsertStmt extends DmlStatementBase {
   private void checkRequiredHBaseColumns(Set<String> mentionedColumnNames)
       throws AnalysisException {
     Preconditions.checkState(table_ instanceof FeHBaseTable);
-    Column column = table_.getColumns().get(0);
+    Column column = table_.getSchema().getColumns().get(0);
     if (!mentionedColumnNames.contains(column.getName())) {
       throw new AnalysisException("Row-key column '" + column.getName() +
           "' must be explicitly mentioned in column permutation.");
@@ -799,7 +799,7 @@ public class InsertStmt extends DmlStatementBase {
       throws AnalysisException {
     int numClusteringCols = table_.getNumClusteringCols();
     List<String> missingPartitionColumnNames = new ArrayList<>();
-    for (Column column : table_.getColumns()) {
+    for (Column column : table_.getSchema().getColumns()) {
       if (!mentionedColumnNames.contains(column.getName())
           && column.getPosition() < numClusteringCols) {
         missingPartitionColumnNames.add(column.getName());
@@ -908,8 +908,9 @@ public class InsertStmt extends DmlStatementBase {
       // declaration, and store their column positions.  We need those exprs in the
       // original order to create the corresponding Hdfs folder structure correctly, or
       // the indexes to construct rows to pass to the Kudu partitioning API.
-      for (int i = 0; i < table_.getColumns().size(); ++i) {
-        Column c = table_.getColumns().get(i);
+      List<Column> columns = table_.getSchema().getColumns();
+      for (int i = 0; i < columns.size(); ++i) {
+        Column c = columns.get(i);
         for (int j = 0; j < tmpPartitionKeyNames.size(); ++j) {
           if (c.getName().equals(tmpPartitionKeyNames.get(j))) {
             Expr expr = tmpPartitionKeyExprs.get(j);
@@ -1168,7 +1169,7 @@ public class InsertStmt extends DmlStatementBase {
 
   public List<String> getMentionedColumns() {
     List<String> result = new ArrayList<>();
-    List<Column> columns = table_.getColumns();
+    List<Column> columns = table_.getSchema().getColumns();
     for (Integer i: mentionedColumns_) result.add(columns.get(i).getName());
     return result;
   }
