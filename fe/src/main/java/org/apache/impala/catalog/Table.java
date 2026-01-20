@@ -607,21 +607,8 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
   }
 
   protected void loadFromThrift(TTable thriftTable) throws TableLoadingException {
-    int columnCount = thriftTable.getClustering_columnsSize() + thriftTable.getColumnsSize();
-    List<Column> columns = new ArrayList<>(columnCount);
-    List<VirtualColumn> virtualColumns = new ArrayList<>(thriftTable.getVirtual_columnsSize());
-
     try {
-      for (TColumn column : thriftTable.getClustering_columns()) {
-        columns.add(Column.fromThrift(column));
-      }
-      for (TColumn column : thriftTable.getColumns()) {
-        columns.add(Column.fromThrift(column));
-      }
-      for (TColumn tvCol : thriftTable.getVirtual_columns()) {
-        virtualColumns.add(VirtualColumn.fromThrift(tvCol));
-      }
-      schema = new TableSchema(columns, virtualColumns, thriftTable.getClustering_columns().size());
+      schema = new TableSchema(thriftTable);
     } catch (ImpalaRuntimeException e) {
       throw new TableLoadingException(String.format("Error loading schema for " +
           "table '%s'", getName()), e);
@@ -634,24 +621,6 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
         TAccessLevel.READ_WRITE;
 
     storageMetadataLoadTime_ = thriftTable.getStorage_metadata_load_time_ns();
-  }
-
-  /**
-   * If column is 'IcebergColumn', we return 'IcebergStructField', otherwise, we
-   * just return 'StructField'.
-   */
-  private StructField getStructFieldFromColumn(Column col) {
-    if (col instanceof IcebergColumn) {
-      IcebergColumn iCol = (IcebergColumn) col;
-      return new IcebergStructField(iCol.getName(), iCol.getType(),
-          iCol.getComment(), iCol.getFieldId());
-    } else if (col instanceof PaimonColumn) {
-      PaimonColumn pCol = (PaimonColumn) col;
-      return new PaimonStructField(pCol.getName(), pCol.getType(), pCol.getComment(),
-          pCol.getFieldId(), pCol.isNullable());
-    } else {
-      return new StructField(col.getName(), col.getType(), col.getComment());
-    }
   }
 
   /**
