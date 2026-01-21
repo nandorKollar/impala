@@ -73,7 +73,7 @@ public class IcebergMetadataTable extends VirtualTable {
         metadataTableSchema)) {
       LOG.trace("Adding column: \"{}\" with type: \"{}\" to metadata table.",
           col.getName(), col.getType());
-      addColumn(IcebergColumn.cloneWithNullability(
+      getSchema().addColumn(IcebergColumn.cloneWithNullability(
           (IcebergColumn)col, true /*isNullable*/));
     }
   }
@@ -127,7 +127,7 @@ public class IcebergMetadataTable extends VirtualTable {
   public TTableDescriptor toThriftDescriptor(int tableId,
       Set<Long> referencedPartitions) {
     TTableDescriptor desc = new TTableDescriptor(tableId, TTableType.ICEBERG_TABLE,
-        getSchema().toTColumnDescriptors(), numClusteringCols_, name_, db_.getName());
+        getSchema().toTColumnDescriptors(), getSchema().getNumClusteringCols(), name_, db_.getName());
     desc.setIcebergTable(FeIcebergTable.Utils.getTIcebergTable(baseTable_,
         ThriftObjectType.DESCRIPTOR_ONLY));
     return desc;

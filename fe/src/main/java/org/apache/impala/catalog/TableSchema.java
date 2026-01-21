@@ -50,6 +50,16 @@ public final class TableSchema {
         this.numClusteringCols_ = clusteringColumns.size();
     }
 
+    public TableSchema(List<Column> columns, List<VirtualColumn> virtualColumns, int numClusteringCols) {
+        for (Column c: columns) {
+            addColumn(c);
+        }
+        for (VirtualColumn c: virtualColumns) {
+            addVirtualColumn(c);
+        }
+        this.numClusteringCols_ = numClusteringCols;
+    }
+
     public List<Column> getColumns() { return colsByPos_; }
 
     public List<VirtualColumn> getVirtualColumns() { return virtualCols_; }

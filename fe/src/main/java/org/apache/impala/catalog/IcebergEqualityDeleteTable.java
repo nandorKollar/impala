@@ -17,7 +17,7 @@
 
 package org.apache.impala.catalog;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -29,7 +29,7 @@ import org.apache.iceberg.types.Types.NestedField;
 /**
  * Iceberg equality delete table is created on the fly during planning. It belongs to an
  * actual Iceberg table (referred to as 'baseTable_'), but has a schema that corresponds
- * to the file schema of equality delete files. Therefore with the help of it we can
+ * to the file schema of equality delete files. Therefor with the help of it we can
  * do an ANTI JOIN between data files and equality delete files.
  */
 public class IcebergEqualityDeleteTable extends IcebergDeleteTable  {
@@ -60,17 +60,15 @@ public class IcebergEqualityDeleteTable extends IcebergDeleteTable  {
       Column equalityCol = new IcebergColumn(field.name(), colType, field.doc(),
           columnPos, field.fieldId(), INVALID_MAP_KEY_ID, INVALID_MAP_VALUE_ID,
           field.isOptional());
-      addColumn(equalityCol);
+      this.tableSchema_ = new TableSchema(
+              Collections.singletonList(equalityCol),
+              Collections.singletonList(VirtualColumn.ICEBERG_DATA_SEQUENCE_NUMBER),
+              0);
     }
   }
 
   @Override
   public List<VirtualColumn> getVirtualColumns() {
-    return Arrays.asList(VirtualColumn.ICEBERG_DATA_SEQUENCE_NUMBER);
-  }
-
-  @Override
-  public TableSchema getSchema() {
-    return baseTable_.getSchema();
+    return getSchema().getVirtualColumns();
   }
 }

@@ -17,13 +17,9 @@
 
 package org.apache.impala.catalog;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
 import org.apache.hadoop.hive.common.ValidWriteIdList;
@@ -31,7 +27,6 @@ import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.impala.analysis.TableName;
 import org.apache.impala.thrift.TCatalogObjectType;
 import org.apache.impala.thrift.TImpalaTableType;
-import org.apache.impala.util.AcidUtils;
 
 /**
  * Tables that aren't actually exist in HMS. E.g. Iceberg position delete tables.
@@ -44,18 +39,7 @@ public abstract class VirtualTable implements FeTable {
   protected final String name_;
   protected final String owner_;
 
-  // colsByPos[i] refers to the ith column in the table. The first numClusteringCols are
-  // the clustering columns.
-  protected final List<Column> colsByPos_ = new ArrayList<>();
-
-  // map from lowercase column name to Column object.
-  protected final Map<String, Column> colsByName_ = new HashMap<>();
-
-  // Number of clustering columns.
-  protected int numClusteringCols_ = 0;
-
-  // Type of this table (array of struct) that mirrors the columns. Useful for analysis.
-  protected final ArrayType type_ = new ArrayType(new StructType());
+  protected TableSchema tableSchema_;
 
   public VirtualTable(org.apache.hadoop.hive.metastore.api.Table msTable, FeDb db,
       String name, String owner) {
@@ -63,13 +47,6 @@ public abstract class VirtualTable implements FeTable {
     db_ = db;
     name_ = name;
     owner_ = owner;
-  }
-
-  protected void addColumn(Column col) {
-    colsByPos_.add(col);
-    colsByName_.put(col.getName().toLowerCase(), col);
-    ((StructType) type_.getItemType()).addField(
-        new StructField(col.getName(), col.getType(), col.getComment()));
   }
 
   @Override
@@ -114,31 +91,30 @@ public abstract class VirtualTable implements FeTable {
 
   @Override
   public List<Column> getClusteringColumns() {
-    return Collections.unmodifiableList(colsByPos_.subList(0, numClusteringCols_));
+    return getSchema().getClusteringColumns();
   }
 
   @Override
   public List<Column> getNonClusteringColumns() {
-    return Collections.unmodifiableList(colsByPos_.subList(numClusteringCols_,
-        colsByPos_.size()));
+    return getSchema().getNonClusteringColumns();
   }
 
   @Override
-  public List<String> getColumnNames() { return Column.toColumnNames(colsByPos_); }
+  public List<String> getColumnNames() { return getSchema().getColumnNames(); }
 
   @Override
-  public int getNumClusteringCols() { return numClusteringCols_; }
+  public int getNumClusteringCols() { return getSchema().getNumClusteringCols(); }
 
   @Override
   public boolean isClusteringColumn(Column c) {
-    return c.getPosition() < numClusteringCols_;
+    return c.getPosition() < getSchema().getNumClusteringCols();
   }
 
   @Override // FeTable
-  public Column getColumn(String name) { return colsByName_.get(name.toLowerCase()); }
+  public Column getColumn(String name) { return getSchema().getColumn(name.toLowerCase()); }
 
   @Override
-  public ArrayType getType() { return type_; }
+  public ArrayType getType() { return getSchema().getType(); }
 
   @Override
   public long getWriteId() { return 0; }

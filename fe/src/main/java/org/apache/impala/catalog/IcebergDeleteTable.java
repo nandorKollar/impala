@@ -169,6 +169,11 @@ public abstract class IcebergDeleteTable extends VirtualTable implements FeIcebe
     }
 
     @Override
+    public TableSchema getSchema() {
+        return baseTable_.getSchema();
+    }
+
+    @Override
     public THdfsTable transformToTHdfsTable(boolean updatePartitionFlag,
         ThriftObjectType type) {
       throw new IllegalStateException("not implemented here");
