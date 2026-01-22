@@ -1,11 +1,17 @@
 package org.apache.impala.catalog;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import org.apache.hadoop.hive.metastore.api.FieldSchema;
+import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.impala.catalog.local.LocalCatalogException;
 import org.apache.impala.catalog.paimon.PaimonColumn;
 import org.apache.impala.common.ImpalaRuntimeException;
 import org.apache.impala.thrift.TColumn;
 import org.apache.impala.thrift.TColumnDescriptor;
 import org.apache.impala.thrift.TTable;
+import org.apache.impala.util.AcidUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,6 +40,63 @@ public final class TableSchema {
     // Number of clustering columns.
     private final int numClusteringCols_;
 
+    private final boolean hasRowIdCol_;
+
+    public static TableSchema fromMsTable(Table msTbl) {
+        final String fullName = msTbl.getDbName() + "." + msTbl.getTableName();
+
+        // The number of clustering columns is the number of partition keys.
+        int numClusteringCols = msTbl.getPartitionKeys().size();
+        // Add all columns to the table. Ordering is important: partition columns first,
+        // then all other columns.
+        try {
+            List<Column> cols = TableSchema.fieldSchemasToColumns(msTbl);
+            boolean isFullAcidTable = AcidUtils.isFullAcidTable(msTbl.getParameters());
+            return new TableSchema(cols, numClusteringCols, fullName, isFullAcidTable);
+        } catch (TableLoadingException e) {
+            throw new LocalCatalogException(e);
+        }
+    }
+
+
+    /**
+     * Convert a list of HMS FieldSchemas to internal Column types.
+     * @throws TableLoadingException if any type is invalid
+     * TODO: Is there any overlap with the other constructors???
+     */
+    private static ImmutableList<Column> fieldSchemasToColumns(
+            org.apache.hadoop.hive.metastore.api.Table msTbl) throws TableLoadingException {
+        boolean isFullAcidTable = AcidUtils.isFullAcidTable(msTbl.getParameters());
+        int pos = 0;
+        ImmutableList.Builder<Column> ret = ImmutableList.builder();
+        for (FieldSchema s : Iterables.concat(msTbl.getPartitionKeys(),
+                msTbl.getSd().getCols())) {
+            if (isFullAcidTable && pos == msTbl.getPartitionKeys().size()) {
+                ret.add(AcidUtils.getRowIdColumnType(pos++));
+            }
+            Type type = FeCatalogUtils.parseColumnType(s, msTbl.getTableName());
+            ret.add(new Column(s.getName(), type, s.getComment(), pos++));
+        }
+        return ret.build();
+    }
+
+    public TableSchema(List<Column> columns, int numClusteringCols,
+                     String fullTableName, boolean isFullAcidSchema) {
+        hasRowIdCol_ = isFullAcidSchema;
+        for (Column c: columns) {
+            addColumn(c);
+        }
+        this.numClusteringCols_ = numClusteringCols;
+
+        try {
+            FeCatalogUtils.validateClusteringColumns(
+                    colsByPos_.subList(0, numClusteringCols_),
+                    fullTableName);
+        } catch (TableLoadingException e) {
+            throw new LocalCatalogException(e);
+        }
+    }
+
     public TableSchema(TTable thriftTable) throws ImpalaRuntimeException {
         // TODO: we know the count of clustering and non-clustering columns,
         // hence we can allocate the corresponding lists with the right sizes
@@ -48,6 +111,7 @@ public final class TableSchema {
             addVirtualColumn(VirtualColumn.fromThrift(tvCol));
         }
         this.numClusteringCols_ = clusteringColumns.size();
+        this.hasRowIdCol_ = false;
     }
 
     public TableSchema(List<Column> columns, List<VirtualColumn> virtualColumns, int numClusteringCols) {
@@ -58,6 +122,7 @@ public final class TableSchema {
             addVirtualColumn(c);
         }
         this.numClusteringCols_ = numClusteringCols;
+        this.hasRowIdCol_ = false;
     }
 
     public List<Column> getColumns() { return colsByPos_; }
@@ -97,7 +162,7 @@ public final class TableSchema {
         virtualCols_.clear();
     }
 
-    private void addVirtualColumn(VirtualColumn col) {
+    public void addVirtualColumn(VirtualColumn col) {
         virtualCols_.add(col);
     }
 

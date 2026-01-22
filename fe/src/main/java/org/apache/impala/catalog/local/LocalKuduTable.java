@@ -31,6 +31,7 @@ import org.apache.impala.catalog.FeKuduTable;
 import org.apache.impala.catalog.KuduColumn;
 import org.apache.impala.catalog.KuduTable;
 import org.apache.impala.catalog.TableLoadingException;
+import org.apache.impala.catalog.TableSchema;
 import org.apache.impala.catalog.local.MetaProvider.TableMetaRef;
 import org.apache.impala.common.ImpalaRuntimeException;
 import org.apache.impala.thrift.TKuduTable;
@@ -89,9 +90,9 @@ public class LocalKuduTable extends LocalTable implements FeKuduTable {
 
     List<KuduPartitionParam> partitionBy = Utils.loadPartitionByParams(kuduTable);
 
-    ColumnMap cmap = new ColumnMap(cols, /*numClusteringCols=*/0, fullTableName,
+    TableSchema schema = new TableSchema(cols, /*numClusteringCols=*/0, fullTableName,
         /*isFullAcidSchema=*/false);
-    return new LocalKuduTable(db, msTable, ref, cmap, kuduTable, isPrimaryKeyUnique,
+    return new LocalKuduTable(db, msTable, ref, schema, kuduTable, isPrimaryKeyUnique,
         pkNames, hasAutoIncrementingColumn, partitionBy);
   }
 
@@ -123,10 +124,10 @@ public class LocalKuduTable extends LocalTable implements FeKuduTable {
       pkNames.add(Schema.getAutoIncrementingColumnName());
     }
 
-    ColumnMap cmap = new ColumnMap(columns, /*numClusteringCols=*/0, fullTableName,
+    TableSchema schema = new TableSchema(columns, /*numClusteringCols=*/0, fullTableName,
         /*isFullAcidSchema=*/false);
 
-    return new LocalKuduTable(db, msTable, /*ref=*/null, cmap, /*kuduTable*/null,
+    return new LocalKuduTable(db, msTable, /*ref=*/null, schema, /*kuduTable*/null,
         isPrimaryKeyUnique, pkNames, hasAutoIncrementingColumn, kuduPartitionParams);
   }
 
@@ -151,11 +152,11 @@ public class LocalKuduTable extends LocalTable implements FeKuduTable {
     }
   }
 
-  private LocalKuduTable(LocalDb db, Table msTable, TableMetaRef ref, ColumnMap cmap,
+  private LocalKuduTable(LocalDb db, Table msTable, TableMetaRef ref, TableSchema schema,
       org.apache.kudu.client.KuduTable kuduTable, boolean isPrimaryKeyUnique,
       List<String> primaryKeyColumnNames, boolean hasAutoIncrementingColumn,
       List<KuduPartitionParam> partitionBy)  {
-    super(db, msTable, ref, cmap);
+    super(db, msTable, ref, schema);
     kuduTable_ = kuduTable;
     tableParams_ = new TableParams(msTable);
     partitionBy_ = ImmutableList.copyOf(partitionBy);

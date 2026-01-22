@@ -104,26 +104,6 @@ public abstract class FeCatalogUtils {
   }
 
   /**
-   * Convert a list of HMS FieldSchemas to internal Column types.
-   * @throws TableLoadingException if any type is invalid
-   */
-  public static ImmutableList<Column> fieldSchemasToColumns(
-      org.apache.hadoop.hive.metastore.api.Table msTbl) throws TableLoadingException {
-    boolean isFullAcidTable = AcidUtils.isFullAcidTable(msTbl.getParameters());
-    int pos = 0;
-    ImmutableList.Builder<Column> ret = ImmutableList.builder();
-    for (FieldSchema s : Iterables.concat(msTbl.getPartitionKeys(),
-                                          msTbl.getSd().getCols())) {
-      if (isFullAcidTable && pos == msTbl.getPartitionKeys().size()) {
-        ret.add(AcidUtils.getRowIdColumnType(pos++));
-      }
-      Type type = parseColumnType(s, msTbl.getTableName());
-      ret.add(new Column(s.getName(), type, s.getComment(), pos++));
-    }
-    return ret.build();
-  }
-
-  /**
    * Validate that the clustering columns are valid for a table
    *
    * TODO(todd): consider refactoring to combine with

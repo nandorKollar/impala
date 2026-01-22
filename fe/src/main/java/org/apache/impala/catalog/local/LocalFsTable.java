@@ -47,6 +47,7 @@ import org.apache.impala.catalog.HdfsFileFormat;
 import org.apache.impala.catalog.HdfsStorageDescriptor;
 import org.apache.impala.catalog.PrunablePartition;
 import org.apache.impala.catalog.SqlConstraints;
+import org.apache.impala.catalog.TableSchema;
 import org.apache.impala.catalog.local.MetaProvider.PartitionMetadata;
 import org.apache.impala.catalog.local.MetaProvider.PartitionRef;
 import org.apache.impala.catalog.local.MetaProvider.TableMetaRef;
@@ -131,12 +132,11 @@ public class LocalFsTable extends LocalTable implements FeFsTable {
   public static LocalFsTable load(LocalDb db, Table msTbl, TableMetaRef ref) {
     String fullName = msTbl.getDbName() + "." + msTbl.getTableName();
 
-    // Set Avro schema if necessary.
-    String avroSchema;
-    ColumnMap cmap;
     try {
       // Load the avro schema if it's external (explicitly specified).
-      avroSchema = loadAvroSchema(msTbl);
+      // Set Avro schema if necessary.
+      String avroSchema = loadAvroSchema(msTbl);
+      Table table = msTbl;
 
       // If the table's format is Avro, then we should override the columns
       // based on the schema (either inferred or explicit). Otherwise, even if
@@ -156,21 +156,20 @@ public class LocalFsTable extends LocalTable implements FeFsTable {
             msTbl, avroSchema);
         Table msTblWithExplicitAvroSchema = msTbl.deepCopy();
         msTblWithExplicitAvroSchema.getSd().setCols(reconciledFieldSchemas);
-        cmap = ColumnMap.fromMsTable(msTblWithExplicitAvroSchema);
-      } else {
-        cmap = ColumnMap.fromMsTable(msTbl);
+        table = msTblWithExplicitAvroSchema;
       }
 
-      return new LocalFsTable(db, msTbl, ref, cmap, avroSchema);
+      return new LocalFsTable(db, msTbl, ref, TableSchema.fromMsTable(table),
+        avroSchema);
     } catch (AnalysisException e) {
       throw new LocalCatalogException("Failed to load Avro schema for table "
           + fullName);
     }
   }
 
-  private LocalFsTable(LocalDb db, Table msTbl, TableMetaRef ref, ColumnMap cmap,
+  private LocalFsTable(LocalDb db, Table msTbl, TableMetaRef ref, TableSchema schema,
       String explicitAvroSchema) {
-    super(db, msTbl, ref, cmap);
+    super(db, msTbl, ref, schema);
 
     // set NULL indicator string from table properties
     String tableNullFormat =
@@ -198,9 +197,8 @@ public class LocalFsTable extends LocalTable implements FeFsTable {
    * Creates a temporary FsTable object populated with the specified properties.
    * This is used for CTAS statements.
    */
-  public static LocalFsTable createCtasTarget(LocalDb db,
-      Table msTbl) throws CatalogException {
-    return new LocalFsTable(db, msTbl, /*ref=*/null, ColumnMap.fromMsTable(msTbl),
+  public static LocalFsTable createCtasTarget(LocalDb db, Table msTbl) {
+    return new LocalFsTable(db, msTbl, /*ref=*/null, TableSchema.fromMsTable(msTbl),
         /*explicitAvroSchema=*/null);
   }
 

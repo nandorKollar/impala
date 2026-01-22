@@ -35,6 +35,7 @@ import org.apache.impala.catalog.FeFsTable;
 import org.apache.impala.catalog.FeIcebergTable;
 import org.apache.impala.catalog.IcebergContentFileStore;
 import org.apache.impala.catalog.TableLoadingException;
+import org.apache.impala.catalog.TableSchema;
 import org.apache.impala.catalog.local.MetaProvider.TableMetaRef;
 import org.apache.impala.common.ImpalaRuntimeException;
 import org.apache.impala.thrift.TCompressionCodec;
@@ -58,7 +59,6 @@ import org.apache.log4j.Logger;
  * Iceberg table for LocalCatalog
  */
 public class LocalIcebergTable extends LocalTable implements FeIcebergTable {
-  private static final Logger LOG = Logger.getLogger(LocalIcebergTable.class);
   private TableParams tableParams_;
   private TIcebergFileFormat icebergFileFormat_;
   private TCompressionCodec icebergParquetCompressionCodec_;
@@ -97,11 +97,11 @@ public class LocalIcebergTable extends LocalTable implements FeIcebergTable {
       List<Column> iceColumns = IcebergSchemaConverter.convertToImpalaSchema(
           icebergApiTable.schema());
       validateColumns(iceColumns, msTable.getSd().getCols());
-      ColumnMap colMap = new ColumnMap(iceColumns,
+      TableSchema schema = new TableSchema(iceColumns,
           /*numClusteringCols=*/ 0,
           db.getName() + "." + msTable.getTableName(),
           /*isFullAcidSchema=*/false);
-      return new LocalIcebergTable(db, msTable, ref, fsTable, colMap, tableInfo,
+      return new LocalIcebergTable(db, msTable, ref, fsTable, schema, tableInfo,
           tableParams, icebergApiTable);
     } catch (InconsistentMetadataFetchException e) {
       // Just rethrow this so the query can be retried by the Frontend.
@@ -137,10 +137,10 @@ public class LocalIcebergTable extends LocalTable implements FeIcebergTable {
   }
 
   private LocalIcebergTable(LocalDb db, Table msTable, MetaProvider.TableMetaRef ref,
-      LocalFsTable fsTable, ColumnMap cmap, TPartialTableInfo tableInfo,
-      TableParams tableParams, org.apache.iceberg.Table icebergApiTable)
+    LocalFsTable fsTable, TableSchema schema, TPartialTableInfo tableInfo,
+    TableParams tableParams, org.apache.iceberg.Table icebergApiTable)
       throws ImpalaRuntimeException {
-    super(db, msTable, ref, cmap);
+    super(db, msTable, ref, schema);
 
     Preconditions.checkNotNull(tableInfo);
     localFsTable_ = fsTable;

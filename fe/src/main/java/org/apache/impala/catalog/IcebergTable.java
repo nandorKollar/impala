@@ -292,10 +292,6 @@ public class IcebergTable extends Table implements FeIcebergTable {
     return msTbl.getTableType().equalsIgnoreCase(TableType.MANAGED_TABLE.toString());
   }
 
-  public HdfsTable getHdfsTable() {
-    return hdfsTable_;
-  }
-
   @Override
   public org.apache.iceberg.Table getIcebergApiTable() {
     return icebergApiTable_;

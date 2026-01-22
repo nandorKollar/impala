@@ -45,8 +45,8 @@ public class LocalHbaseTable extends LocalTable implements FeHBaseTable {
   // TODO: revisit after caching is implemented for local catalog
   private HColumnDescriptor[] columnFamilies_ = null;
 
-  private LocalHbaseTable(LocalDb db, Table msTbl, TableMetaRef ref, ColumnMap cols) {
-    super(db, msTbl, ref, cols);
+  private LocalHbaseTable(LocalDb db, Table msTbl, TableMetaRef ref, TableSchema schema) {
+    super(db, msTbl, ref, schema);
     hbaseTableName_ = Util.getHBaseTableName(msTbl);
   }
 
@@ -56,9 +56,9 @@ public class LocalHbaseTable extends LocalTable implements FeHBaseTable {
       Util.getHBaseTable(Util.getHBaseTableName(msTable)).close();
       // since we don't support composite hbase rowkeys yet, all hbase tables have a
       // single clustering col
-      ColumnMap cmap = new ColumnMap(Util.loadColumns(msTable), 1,
+      TableSchema schema = new TableSchema(Util.loadColumns(msTable), 1,
           msTable.getDbName() + "." + msTable.getTableName(), /*isFullAcidSchema=*/false);
-      return new LocalHbaseTable(db, msTable, ref, cmap);
+      return new LocalHbaseTable(db, msTable, ref, schema);
     } catch (IOException | MetaException | SerDeException e) {
       throw new LocalCatalogException(e);
     }
