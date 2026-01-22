@@ -275,11 +275,6 @@ abstract class LocalTable implements FeTable {
   }
 
   @Override
-  public List<String> getColumnNames() {
-    return schema_.getColumnNames();
-  }
-
-  @Override
   public List<Column> getClusteringColumns() {
     return schema_.getClusteringColumns();
   }
@@ -352,7 +347,7 @@ abstract class LocalTable implements FeTable {
   protected void loadColumnStats() {
     try {
       List<ColumnStatisticsObj> stats = db_.getCatalog().getMetaProvider()
-          .loadTableColumnStatistics(ref_, getColumnNames());
+          .loadTableColumnStatistics(ref_, schema_.getColumnNames());
       FeCatalogUtils.injectColumnStats(stats, this, testStats_);
     } catch (TException e) {
       LOG.warn("Could not load column statistics for: " + getFullName(), e);

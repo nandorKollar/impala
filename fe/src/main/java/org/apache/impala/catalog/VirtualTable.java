@@ -100,9 +100,6 @@ public abstract class VirtualTable implements FeTable {
   }
 
   @Override
-  public List<String> getColumnNames() { return getSchema().getColumnNames(); }
-
-  @Override
   public int getNumClusteringCols() { return getSchema().getNumClusteringCols(); }
 
   @Override

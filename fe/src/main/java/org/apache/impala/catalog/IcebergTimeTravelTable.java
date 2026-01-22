@@ -131,11 +131,6 @@ public class IcebergTimeTravelTable
   }
 
   @Override
-  public List<String> getColumnNames() {
-    return Column.toColumnNames(colsByPos_);
-  }
-
-  @Override
   public List<Column> getClusteringColumns() {
     return Collections.emptyList();
   }
@@ -504,11 +499,6 @@ class ForwardingFeIcebergTable implements FeIcebergTable {
   @Override
   public List<Column> getColumnsInHiveOrder() {
     return base.getColumnsInHiveOrder();
-  }
-
-  @Override
-  public List<String> getColumnNames() {
-    return base.getColumnNames();
   }
 
   @Override

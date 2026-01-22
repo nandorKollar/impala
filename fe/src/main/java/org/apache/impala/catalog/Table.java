@@ -780,7 +780,7 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
     }
     if (selector.want_stats_for_column_names != null ||
         selector.want_stats_for_all_columns) {
-      List<String> colList = selector.want_stats_for_all_columns ? getColumnNames() :
+      List<String> colList = selector.want_stats_for_all_columns ? schema.getColumnNames() :
           selector.want_stats_for_column_names;
       List<ColumnStatisticsObj> statsList =
           Lists.newArrayListWithCapacity(colList.size());
@@ -847,9 +847,6 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
 
   @Override // FeTable
   public List<VirtualColumn> getVirtualColumns() { return getSchema().getVirtualColumns(); }
-
-  @Override // FeTable
-  public List<String> getColumnNames() { return Column.toColumnNames(getSchema().getColumns()); }
 
   /**
    * Subclasses should override this if they provide a storage handler class. Currently

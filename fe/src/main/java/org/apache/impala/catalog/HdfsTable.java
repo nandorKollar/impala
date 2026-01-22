@@ -2432,7 +2432,7 @@ public class HdfsTable extends Table implements FeFsTable {
     }
     THdfsPartition prototypePartition = FeCatalogUtils.fsPartitionToThrift(
         prototypePartition_, ThriftObjectType.DESCRIPTOR_ONLY);
-    THdfsTable hdfsTable = new THdfsTable(hdfsBaseDir_, getColumnNames(),
+    THdfsTable hdfsTable = new THdfsTable(hdfsBaseDir_, getSchema().getColumnNames(),
         getNullPartitionKeyValue(), nullColumnValue_, idToPartition, prototypePartition);
     hdfsTable.setAvroSchema(avroSchema_);
     hdfsTable.setSql_constraints(sqlConstraints_.toThrift());

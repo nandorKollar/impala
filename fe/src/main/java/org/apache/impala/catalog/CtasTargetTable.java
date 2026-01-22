@@ -120,9 +120,6 @@ public abstract class CtasTargetTable implements FeTable {
   }
 
   @Override
-  public List<String> getColumnNames() { return Column.toColumnNames(colsByPos_); }
-
-  @Override
   public int getNumClusteringCols() {
     return numClusteringCols_;
   }

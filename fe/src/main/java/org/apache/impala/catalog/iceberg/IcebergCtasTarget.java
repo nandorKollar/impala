@@ -318,7 +318,7 @@ public class IcebergCtasTarget extends CtasTargetTable implements FeIcebergTable
     Map<Long, THdfsPartition> idToPartition = new HashMap<>();
     THdfsPartition tPrototypePartition = createPrototypePartition();
     return new THdfsTable(localFsTable.getHdfsBaseDir(),
-        getColumnNames(), localFsTable.getNullPartitionKeyValue(),
+        getSchema().getColumnNames(), localFsTable.getNullPartitionKeyValue(),
         FeFsTable.DEFAULT_NULL_COLUMN_VALUE, idToPartition, tPrototypePartition);
   }
 

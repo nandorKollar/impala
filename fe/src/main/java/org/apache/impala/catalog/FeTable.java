@@ -119,12 +119,6 @@ public interface FeTable {
    */
   List<Column> getColumnsInHiveOrder();
 
-  /**
-   * @return a list of the column names ordered by position.
-   * TODO: replace with corresponding method on TableSchema
-   */
-  List<String> getColumnNames();
-
   TableSchema getSchema();
 
   /**

@@ -339,7 +339,7 @@ public class LocalFsTable extends LocalTable implements FeFsTable {
     THdfsPartition tPrototypePartition = FeCatalogUtils.fsPartitionToThrift(
         createPrototypePartition(), ThriftObjectType.DESCRIPTOR_ONLY);
 
-    THdfsTable hdfsTable = new THdfsTable(getHdfsBaseDir(), getColumnNames(),
+    THdfsTable hdfsTable = new THdfsTable(getHdfsBaseDir(), getSchema().getColumnNames(),
         getNullPartitionKeyValue(), nullColumnValue_, idToPartition,
         tPrototypePartition);
     hdfsTable.setHas_full_partitions(true);

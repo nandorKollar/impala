@@ -276,7 +276,7 @@ public class LocalIcebergTable extends LocalTable implements FeIcebergTable {
         localFsTable_.createPrototypePartition(),
         ThriftObjectType.DESCRIPTOR_ONLY);
     THdfsTable hdfsTable = new THdfsTable(localFsTable_.getHdfsBaseDir(),
-        getColumnNames(), localFsTable_.getNullPartitionKeyValue(),
+        getSchema().getColumnNames(), localFsTable_.getNullPartitionKeyValue(),
         FeFsTable.DEFAULT_NULL_COLUMN_VALUE, idToPartition, tPrototypePartition);
     hdfsTable.setAvroSchema(localFsTable_.getAvroSchema());
     Utils.updateIcebergPartitionFileFormat(this, hdfsTable);

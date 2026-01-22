@@ -376,7 +376,7 @@ public class LocalCatalogTest {
     LocalKuduTable t = (LocalKuduTable) catalog_.getTable("functional_kudu",  "alltypes");
     assertEquals("id,bool_col,tinyint_col,smallint_col,int_col," +
         "bigint_col,float_col,double_col,date_string_col,string_col," +
-        "timestamp_col,year,month", Joiner.on(",").join(t.getColumnNames()));
+        "timestamp_col,year,month", Joiner.on(",").join(t.getSchema().getColumnNames()));
     boolean areDefaultSynchronizedTablesExternal = TestUtils.getHiveMajorVersion() > 2;
     String expectedOutputPrefix = areDefaultSynchronizedTablesExternal ? "CREATE "
         + "EXTERNAL TABLE" : "CREATE TABLE";

@@ -80,7 +80,7 @@ public abstract class MergeCase extends StatementBase {
       InlineViewRef source = (InlineViewRef) sourceTableRef_;
       return source.getColLabels();
     } else {
-      return sourceTableRef_.getTable().getColumnNames();
+      return sourceTableRef_.getTable().getSchema().getColumnNames();
     }
   }
 
