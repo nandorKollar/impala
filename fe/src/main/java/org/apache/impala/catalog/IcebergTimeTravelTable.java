@@ -221,11 +221,6 @@ class ForwardingFeIcebergTable implements FeIcebergTable {
   }
 
   @Override
-  public List<String> getForeignKeysSql() throws TException {
-    return base.getForeignKeysSql();
-  }
-
-  @Override
   public int parseSkipHeaderLineCount(StringBuilder error) {
     return base.parseSkipHeaderLineCount(error);
   }

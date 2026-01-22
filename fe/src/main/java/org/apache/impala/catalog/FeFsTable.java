@@ -16,7 +16,6 @@
 // under the License.
 package org.apache.impala.catalog;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -37,8 +36,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
-import org.apache.hadoop.hive.metastore.api.SQLForeignKey;
-import org.apache.hadoop.hive.metastore.api.SQLPrimaryKey;
 import org.apache.impala.analysis.Expr;
 import org.apache.impala.analysis.LiteralExpr;
 import org.apache.impala.analysis.PartitionKeyValue;
@@ -185,7 +182,6 @@ public interface FeFsTable extends FeTable {
    */
   public String getNullPartitionKeyValue();
 
-
   /**
    * @return the base HDFS directory where files of this table are stored.
    */
@@ -320,12 +316,7 @@ public interface FeFsTable extends FeTable {
    * catalog mode, this causes load of constraints.
    */
   default List<String> getPrimaryKeyColumnNames() throws TException {
-    List<String> primaryKeyColNames = new ArrayList<>();
-    List<SQLPrimaryKey> primaryKeys = getSqlConstraints().getPrimaryKeys();
-    if (!primaryKeys.isEmpty()) {
-      primaryKeys.stream().forEach(p -> primaryKeyColNames.add(p.getColumn_name()));
-    }
-    return primaryKeyColNames;
+    return getSqlConstraints().getPrimaryKeyColumnNames();
   }
 
   /**
@@ -333,46 +324,6 @@ public interface FeFsTable extends FeTable {
    */
   default boolean isPartitioned() {
     return getMetaStoreTable().getPartitionKeysSize() > 0;
-  }
-
-  /**
-   * Get foreign keys information as strings. Useful for toSqlUtils.
-   * @return List of strings of the form "(col1, col2,..) REFERENCES [pk_db].pk_table
-   * (colA, colB,..)". In local catalog mode, this causes load of constraints.
-   */
-  default List<String> getForeignKeysSql() throws TException{
-    List<String> foreignKeysSql = new ArrayList<>();
-    // Iterate through foreign keys list. This list may contain multiple foreign keys
-    // and each foreign key may contain multiple columns. The outerloop collects
-    // information common to a foreign key (pk table information). The inner
-    // loop collects column information.
-    List<SQLForeignKey> foreignKeys = getSqlConstraints().getForeignKeys();
-    for (int i = 0; i < foreignKeys.size(); i++) {
-      String pkTableDb = foreignKeys.get(i).getPktable_db();
-      String pkTableName = foreignKeys.get(i).getPktable_name();
-      List<String> pkList = new ArrayList<>();
-      List<String> fkList = new ArrayList<>();
-      StringBuilder sb = new StringBuilder();
-      sb.append("(");
-      for (; i < foreignKeys.size(); i++) {
-        fkList.add(foreignKeys.get(i).getFkcolumn_name());
-        pkList.add(foreignKeys.get(i).getPkcolumn_name());
-        // Foreign keys for a table can consist of multiple columns, they are represented
-        // as different SQLForeignKey structures. A key_seq is used to stitch together
-        // the entire sequence that forms the foreign key. Hence, we bail out of inner
-        // loop if the key_seq of the next SQLForeignKey is 1.
-        if (i + 1 < foreignKeys.size() && foreignKeys.get(i + 1).getKey_seq() == 1) {
-          break;
-        }
-      }
-      Joiner.on(", ").appendTo(sb, fkList).append(") ");
-      sb.append("REFERENCES ");
-      if (pkTableDb != null) sb.append(pkTableDb + ".");
-      sb.append(pkTableName + "(");
-      Joiner.on(", ").appendTo(sb, pkList).append(")");
-      foreignKeysSql.add(sb.toString());
-    }
-    return foreignKeysSql;
   }
 
   /**

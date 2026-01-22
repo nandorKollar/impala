@@ -574,7 +574,7 @@ public class ToSqlUtils {
       compression = HdfsCompression.fromHdfsInputFormatClass(inputFormat);
       try {
         primaryKeySql = ((FeFsTable) table).getPrimaryKeyColumnNames();
-        foreignKeySql = ((FeFsTable) table).getForeignKeysSql();
+        foreignKeySql = table.getSqlConstraints().getForeignKeysSql();
       } catch (Exception e) {
         throw new CatalogException("Could not get primary key/foreign keys sql.", e);
       }
