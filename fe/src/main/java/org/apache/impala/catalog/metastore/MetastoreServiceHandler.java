@@ -3157,23 +3157,23 @@ public abstract class MetastoreServiceHandler extends AbstractThriftHiveMetastor
     }
     if (catalogTbl instanceof IncompleteTable) {
       LOG.debug("table {} is already incomplete, not invalidating" +
-              " it due to hms api: {}", catalogTbl.getFullName(),
+              " it due to hms api: {}", catalogTbl.getTableName(),
           apiName);
       return;
     }
     Map<String, String> tblProperties = catalogTbl.getMetaStoreTable().getParameters();
     if (tblProperties == null || AcidUtils.isTransactionalTable(tblProperties)) {
       LOG.debug("Table {} is transactional. Not removing it from catalogd cache",
-          catalogTbl.getFullName());
+          catalogTbl.getTableName());
       return;
     }
     LOG.debug("Invalidating non transactional table {} due to metastore " +
-            "api {}", catalogTbl.getFullName(), apiName);
+            "api {}", catalogTbl.getTableName(), apiName);
     org.apache.impala.catalog.Table invalidatedCatalogTbl =
         catalog_.invalidateTableIfExists(dbName, tableName);
     if (invalidatedCatalogTbl != null) {
       LOG.info("Invalidated non transactional table {} from catalogd cache due to " +
-              "HMS api: {}", catalogTbl.getFullName(), apiName);
+              "HMS api: {}", catalogTbl.getTableName(), apiName);
     }
     return;
   }

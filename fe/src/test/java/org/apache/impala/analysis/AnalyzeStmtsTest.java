@@ -2768,9 +2768,9 @@ public class AnalyzeStmtsTest extends AnalyzerTest {
   }
 
   @Test
-  public void TestSampledNdv() throws AnalysisException {
+  public void TestSampledNdv() {
     Table allScalarTypes = addAllScalarTypesTestTable();
-    String tblName = allScalarTypes.getFullName();
+    String tblName = allScalarTypes.getTableName().fullName();
 
     // Positive tests: Test all scalar types and valid sampling percents.
     double validSamplePercs[] = new double[] { 0.0, 0.1, 0.2, 0.5, 0.8, 1.0 };

@@ -52,9 +52,6 @@ public abstract class CtasTargetTable implements FeTable {
   // map from lowercase column name to Column object.
   protected final Map<String, Column> colsByName_ = new HashMap<>();
 
-  // Number of clustering columns.
-  protected int numClusteringCols_ = 0;
-
   // Type of this table (array of struct) that mirrors the columns. Useful for analysis.
   protected final ArrayType type_ = new ArrayType(new StructType());
 
@@ -93,9 +90,6 @@ public abstract class CtasTargetTable implements FeTable {
   public String getName() { return name_; }
 
   @Override
-  public String getFullName() { return (db_ != null ? db_.getName() + "." : "") + name_; }
-
-  @Override
   public TableName getTableName() {
     return new TableName(db_ != null ? db_.getName() : null, name_);
   }
@@ -106,20 +100,19 @@ public abstract class CtasTargetTable implements FeTable {
   @Override
   public List<Column> getColumnsInHiveOrder() {
     List<Column> columns = Lists.newArrayList(getNonClusteringColumns());
-    columns = filterColumnsNotStoredInHms(columns);
+    columns = Column.filterColumnsNotStoredInHms(getMetaStoreTable(), columns);
     columns.addAll(getClusteringColumns());
     return Collections.unmodifiableList(columns);
   }
 
   @Override
   public List<Column> getClusteringColumns() {
-    return Collections.unmodifiableList(colsByPos_.subList(0, numClusteringCols_));
+    return Collections.emptyList();
   }
 
   @Override
   public List<Column> getNonClusteringColumns() {
-    return Collections.unmodifiableList(colsByPos_.subList(numClusteringCols_,
-        colsByPos_.size()));
+    return Collections.unmodifiableList(colsByPos_);
   }
 
   @Override
@@ -127,12 +120,12 @@ public abstract class CtasTargetTable implements FeTable {
 
   @Override
   public int getNumClusteringCols() {
-    return numClusteringCols_;
+    return 0;
   }
 
   @Override
   public boolean isClusteringColumn(Column c) {
-      return c.getPosition() < numClusteringCols_;
+      return false;
   }
 
   @Override // FeTable
@@ -148,13 +141,6 @@ public abstract class CtasTargetTable implements FeTable {
 
   @Override
   public TTableStats getTTableStats() { return null; }
-
-  @Override
-  public abstract TTableDescriptor toThriftDescriptor(int tableId,
-      Set<Long> referencedPartitions);
-
-  @Override
-  public long getWriteId() { return 0; }
 
   @Override
   public ValidWriteIdList getValidWriteIds() { return null; }

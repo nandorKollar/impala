@@ -91,7 +91,7 @@ public class ShowCreateTableStmt extends StatementBase implements SingleTableStm
       // Report a masked authorization message if authorization fails.
       viewAnalyzer.setMaskPrivChecks(String.format("User '%s' does not have privileges " +
           "to see the definition of view '%s'.", analyzer.getUser().getName(),
-          view.getFullName()));
+          view.getTableName().fullName()));
       QueryStmt viewQuery = view.getQueryStmt().clone();
       // Views from the Hive metastore may rely on Hive's column naming if the SQL
       // statement references a column by its implicitly defined column names.

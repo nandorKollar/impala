@@ -441,7 +441,7 @@ public interface FeHBaseTable extends FeTable {
           // too small to be meaningful.
           LOG.warn("Table {}: no data available to compute " +
               "row count estimate for key range ('{}', '{}')",
-              tbl.getFullName(), Bytes.toString(startRowKey), Bytes.toString(endRowKey));
+              tbl.getTableName(), Bytes.toString(startRowKey), Bytes.toString(endRowKey));
           return new Pair<>(-1L, -1L);
         } else {
           rowCount = (long) (totalSize / statsSize.mean());

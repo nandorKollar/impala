@@ -127,7 +127,7 @@ abstract class KuduModifyImpl extends ModifyImpl {
       }
 
       rhsExpr = StatementBase.checkTypeCompatibility(
-          modifyStmt_.targetTableRef_.getDesc().getTable().getFullName(),
+          modifyStmt_.targetTableRef_.getDesc().getTable().getTableName().fullName(),
           c, rhsExpr, analyzer, null /*widestTypeSrcExpr*/);
 
       if (convertToUtc && rhsExpr.getType().isTimestamp()) {

@@ -779,7 +779,7 @@ public class MetastoreShim extends Hive3MetastoreShimBase {
       response = CompactionInfoLoader.getLatestCompactionInfo(client, request);
     } catch (Exception e) {
       throw new CatalogException("Error getting latest compaction info for "
-          + hdfsTable.getFullName(), e);
+          + hdfsTable.getTableName(), e);
     }
 
     Map<String, Long> partNameToCompactionId = new HashMap<>();
@@ -792,7 +792,7 @@ public class MetastoreShim extends Hive3MetastoreShimBase {
         } else {
           LOG.warn(
               "Partitioned table {} has null partitionname in CompactionInfoStruct: {}",
-              hdfsTable.getFullName(), ci.toString());
+              hdfsTable.getTableName(), ci.toString());
         }
       }
     } else {
@@ -808,7 +808,7 @@ public class MetastoreShim extends Hive3MetastoreShimBase {
       HdfsPartition.Builder builder = new HdfsPartition.Builder(partition);
       LOG.debug(
           "Cached compaction id for {} partition {}: {} but the latest compaction id: {}",
-          hdfsTable.getFullName(), partition.getPartitionName(),
+          hdfsTable.getTableName(), partition.getPartitionName(),
           partition.getLastCompactionId(), latestCompactionId);
       builder.setLastCompactionId(latestCompactionId);
       partBuilders.add(builder);

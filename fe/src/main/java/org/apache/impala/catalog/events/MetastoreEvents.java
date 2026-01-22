@@ -1454,7 +1454,7 @@ public class MetastoreEvents {
         // should *NOT* be skipped in event processing
         if (tbl instanceof IncompleteTable && tbl.getLastSyncedEventId() == -1) {
           infoLog("Skipping on an incomplete table {} since last synced event id is "
-              + "set to {}", tbl.getFullName(), tbl.getLastSyncedEventId());
+              + "set to {}", tbl.getTableName(), tbl.getLastSyncedEventId());
           return true;
         }
       } catch (DatabaseNotFoundException e) {
@@ -1470,7 +1470,7 @@ public class MetastoreEvents {
       // this event id, the event processing would be skipped.
       if (tbl.getLastSyncedEventId() >= eventId) {
         infoLog("Skipping on table {} since it is already synced till event id {}",
-            tbl.getFullName(), tbl.getLastSyncedEventId());
+            tbl.getTableName(), tbl.getLastSyncedEventId());
         shouldSkip = true;
       }
       return shouldSkip;
@@ -1497,7 +1497,7 @@ public class MetastoreEvents {
           catalog_.getLock().writeLock().unlock();
           if (tbl.getLastSyncedEventId() < getEventId()) {
             infoLog("is a self event. last synced event id for "
-                    + "table {} is {}. Setting it to {}", tbl.getFullName(),
+                    + "table {} is {}. Setting it to {}", tbl.getTableName(),
                 tbl.getLastSyncedEventId(), getEventId());
             tbl.setLastSyncedEventId(getEventId());
           }
@@ -1528,7 +1528,7 @@ public class MetastoreEvents {
           // Older event, so this event will be skipped.
           metrics_.getCounter(MetastoreEventsProcessor.EVENTS_SKIPPED_METRIC).inc();
           infoLog("Table: {} createEventId: {} is >= to the current " +
-              "eventId: {}. Incremented skipped metric to {}", tbl.getFullName(),
+              "eventId: {}. Incremented skipped metric to {}", tbl.getTableName(),
               tbl.getCreateEventId(), getEventId(),
               metrics_.getCounter(MetastoreEventsProcessor.EVENTS_SKIPPED_METRIC)
                   .getCount());
@@ -2199,7 +2199,7 @@ public class MetastoreEvents {
       } else if (getEventId() > tbl.getCreateEventId()) {
         catalog_.invalidateTable(tbl.getTableName().toThrift(), new Reference<>(),
             new Reference<>(), NoOpEventSequence.INSTANCE, getEventId());
-        LOG.info("Table " + tbl.getFullName() + " is invalidated from catalog cache" +
+        LOG.info("Table " + tbl.getTableName() + " is invalidated from catalog cache" +
             " since eventSync is turned on for this table.");
       } else {
         // Unknown state of metadata object, make event processor go into error state
@@ -3632,7 +3632,7 @@ public class MetastoreEvents {
           return ;
         }
         if (tbl instanceof IncompleteTable) {
-          infoLog("Skipping on an incomplete table {}", tbl.getFullName());
+          infoLog("Skipping on an incomplete table {}", tbl.getTableName());
           metrics_.getCounter(MetastoreEventsProcessor.EVENTS_SKIPPED_METRIC).inc();
           return ;
         }
@@ -3644,7 +3644,7 @@ public class MetastoreEvents {
       }
       catalog_.invalidateTable(tbl.getTableName().toThrift(),
           tblWasRemoved, dbWasAdded, NoOpEventSequence.INSTANCE, getEventId());
-      LOG.info("Table " + tbl.getFullName() + " is invalidated from catalog cache");
+      LOG.info("Table " + tbl.getTableName() + " is invalidated from catalog cache");
     }
   }
 

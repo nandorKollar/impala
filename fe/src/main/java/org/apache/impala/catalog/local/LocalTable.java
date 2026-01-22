@@ -234,7 +234,7 @@ abstract class LocalTable implements FeTable {
   @Override
   public String getOwnerUser() {
     if (msTable_ == null) {
-      LOG.warn("Owner of {} is unknown due to msTable is unloaded", getFullName());
+      LOG.warn("Owner of {} is unknown due to msTable is unloaded", getTableName());
       return null;
     }
     return MetastoreShim.getTableOwnerType(msTable_) == PrincipalType.USER ?
@@ -255,11 +255,6 @@ abstract class LocalTable implements FeTable {
   @Override
   public String getName() {
     return name_;
-  }
-
-  @Override
-  public String getFullName() {
-    return db_.getName() + "." + name_;
   }
 
   @Override
@@ -285,7 +280,7 @@ abstract class LocalTable implements FeTable {
   @Override
   public List<Column> getColumnsInHiveOrder() {
     List<Column> columns = Lists.newArrayList(getNonClusteringColumns());
-    columns = filterColumnsNotStoredInHms(columns);
+    columns = Column.filterColumnsNotStoredInHms(getMetaStoreTable(), columns);
     columns.addAll(getClusteringColumns());
     return Collections.unmodifiableList(columns);
   }
@@ -344,11 +339,6 @@ abstract class LocalTable implements FeTable {
   }
 
   @Override
-  public long getWriteId() {
-    return -1l;
-  }
-
-  @Override
   public ValidWriteIdList getValidWriteIds() {
     return null;
   }
@@ -371,7 +361,7 @@ abstract class LocalTable implements FeTable {
           .loadTableColumnStatistics(ref_, getColumnNames());
       FeCatalogUtils.injectColumnStats(stats, this, testStats_);
     } catch (TException e) {
-      LOG.warn("Could not load column statistics for: " + getFullName(), e);
+      LOG.warn("Could not load column statistics for: {}", getTableName(), e);
     }
   }
 

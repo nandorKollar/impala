@@ -34,7 +34,6 @@ import org.apache.impala.analysis.KuduPartitionParam;
 import org.apache.impala.common.ImpalaRuntimeException;
 import org.apache.impala.service.BackendConfig;
 import org.apache.impala.thrift.TCatalogObjectType;
-import org.apache.impala.thrift.TColumn;
 import org.apache.impala.thrift.TKuduPartitionByHashParam;
 import org.apache.impala.thrift.TKuduPartitionByRangeParam;
 import org.apache.impala.thrift.TKuduPartitionParam;
@@ -181,7 +180,7 @@ public class KuduTable extends Table implements FeKuduTable {
    */
   @Override
   public List<Column> getColumnsInHiveOrder() {
-    return filterColumnsNotStoredInHms(getColumns());
+    return Column.filterColumnsNotStoredInHms(getMetaStoreTable(), getColumns());
   }
 
   public static boolean isKuduStorageHandler(String handler) {
@@ -502,7 +501,7 @@ public class KuduTable extends Table implements FeKuduTable {
   public TTableDescriptor toThriftDescriptor(int tableId,
       Set<Long> referencedPartitions) {
     TTableDescriptor desc = new TTableDescriptor(tableId, TTableType.KUDU_TABLE,
-        getTColumnDescriptors(), numClusteringCols_, name_, db_.getName());
+        Column.toTColumnDescriptors(getColumns()), numClusteringCols_, name_, db_.getName());
     desc.setKuduTable(getTKuduTable());
     return desc;
   }

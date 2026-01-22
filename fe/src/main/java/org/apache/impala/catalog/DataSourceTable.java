@@ -135,11 +135,6 @@ public class DataSourceTable extends Table implements FeDataSourceTable {
   }
 
   @Override
-  public long getWriteId() {
-    return -1;
-  }
-
-  @Override
   public ValidWriteIdList getValidWriteIds() {
     return null;
   }
@@ -339,7 +334,7 @@ public class DataSourceTable extends Table implements FeDataSourceTable {
   @Override
   public TTableDescriptor toThriftDescriptor(int tableId, Set<Long> referencedPartitions) {
     TTableDescriptor tableDesc = new TTableDescriptor(tableId,
-        TTableType.DATA_SOURCE_TABLE, getTColumnDescriptors(), numClusteringCols_,
+        TTableType.DATA_SOURCE_TABLE, Column.toTColumnDescriptors(getColumns()), numClusteringCols_,
         name_, db_.getName());
     tableDesc.setDataSourceTable(getDataSourceTable());
     return tableDesc;

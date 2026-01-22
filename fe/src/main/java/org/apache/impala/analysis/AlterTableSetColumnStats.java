@@ -64,7 +64,7 @@ public class AlterTableSetColumnStats extends AlterTableStmt {
     if (col == null) {
       throw new AnalysisException(
           String.format("Column '%s' does not exist in table: %s",
-              colName_, getTargetTable().getFullName()));
+              colName_, getTargetTable().getTableName()));
     }
     // Cannot update stats on partition columns because the HMS has no entries
     // for them, and the stats can be computed directly from the metadata.

@@ -77,15 +77,15 @@ public class AlterTableOrViewRenameStmt extends AlterTableStmt {
     table_ = analyzer.getTable(tableName_, Privilege.ALL);
     if (table_ instanceof FeView && renameTable_) {
       throw new AnalysisException(String.format(
-          "ALTER TABLE not allowed on a view: %s", table_.getFullName()));
+          "ALTER TABLE not allowed on a view: %s", table_.getTableName()));
     }
     if (!(table_ instanceof FeView) && !renameTable_) {
       throw new AnalysisException(String.format(
-          "ALTER VIEW not allowed on a table: %s", table_.getFullName()));
+          "ALTER VIEW not allowed on a table: %s", table_.getTableName()));
     } else if (table_ instanceof FePaimonTable) {
       throw new AnalysisException(String.format(
           "ALTER TABLE RENAME statement not allowed on PAIMON table: %s",
-          table_.getFullName()));
+          table_.getTableName()));
     }
     newDbName_ = analyzer.getTargetDbName(newTableName_);
     if (analyzer.dbContainsTable(newDbName_, newTableName_.getTbl(), Privilege.CREATE)) {

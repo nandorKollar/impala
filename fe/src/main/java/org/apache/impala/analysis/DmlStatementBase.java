@@ -103,7 +103,7 @@ public abstract class DmlStatementBase extends StatementBase {
           "Left-hand side column '%s' in assignment expression '%s=%s' does not "
               + "belong to target table '%s'",
           lhsSlotRef.toSql(), lhsSlotRef.toSql(), rhsExpr.toSql(),
-          tableRef.getDesc().getTable().getFullName()));
+          tableRef.getDesc().getTable().getTableName()));
     }
   }
 
@@ -120,7 +120,7 @@ public abstract class DmlStatementBase extends StatementBase {
   public static Expr checkTypeCompatibility(Analyzer analyzer, Column c, Expr rhsExpr,
       TableRef tableRef) throws AnalysisException {
     return StatementBase.checkTypeCompatibility(
-        tableRef.getDesc().getTable().getFullName(), c, rhsExpr, analyzer,
+        tableRef.getDesc().getTable().getTableName().toString(), c, rhsExpr, analyzer,
         null /*widestTypeSrcExpr*/);
   }
 

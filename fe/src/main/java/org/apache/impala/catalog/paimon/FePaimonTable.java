@@ -87,7 +87,7 @@ public interface FePaimonTable extends FeTable, FeShowFileStmtSupport {
       if (!ColumnStats.isSupportedColType(col.getType())) {
         LOG.warn(String.format("Statistics for %s, column %s are not supported as " +
                         "column has type %s",
-            getFullName(), col.getName(), col.getType()));
+            getTableName(), col.getName(), col.getType()));
         continue;
       }
 
@@ -101,7 +101,7 @@ public interface FePaimonTable extends FeTable, FeShowFileStmtSupport {
               "Failed to load column stats for %s, column %s. Stats may be " +
               "incompatible with column type %s. Consider regenerating " +
                       "statistics for %s.",
-              getFullName(), col.getName(), col.getType(), getFullName()));
+              getTableName(), col.getName(), col.getType(), getTableName().fullName()));
         }
       }
     }

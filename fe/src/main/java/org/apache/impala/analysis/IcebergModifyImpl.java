@@ -65,13 +65,13 @@ abstract class IcebergModifyImpl extends ModifyImpl {
 
     if (icePosDelTable_.getFormatVersion() == 1) {
       throw new AnalysisException("Iceberg V1 table do not support DELETE/UPDATE " +
-          "operations: " + originalTargetTable_.getFullName());
+          "operations: " + originalTargetTable_.getTableName());
     }
 
     if (originalTargetTable_.getDeleteFileFormat() != TIcebergFileFormat.PARQUET) {
       throw new AnalysisException("Impala can only write delete files in PARQUET, " +
           "but the given table uses a different file format: " +
-          originalTargetTable_.getFullName());
+          originalTargetTable_.getTableName());
     }
     String modifyMode = getModifyMode();
     String modifyWriteMode = originalTargetTable_.getIcebergApiTable().properties()
@@ -80,7 +80,7 @@ abstract class IcebergModifyImpl extends ModifyImpl {
         && !isMergeOnReadAlwaysAllowed()) {
       throw new AnalysisException(String.format(
           "Unsupported '%s': '%s' for Iceberg table: %s",
-          modifyMode, modifyWriteMode, originalTargetTable_.getFullName()));
+          modifyMode, modifyWriteMode, originalTargetTable_.getTableName()));
     }
   }
 

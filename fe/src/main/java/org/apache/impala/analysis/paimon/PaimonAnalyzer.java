@@ -94,7 +94,7 @@ public class PaimonAnalyzer {
       case COLUMN_STATS: return;
       case PARTITIONS:
         if (!PaimonUtil.hasPartition(table.getPaimonApiTable())) {
-          throw new AnalysisException("Table is not partitioned: " + table.getFullName());
+          throw new AnalysisException("Table is not partitioned: " + table.getTableName());
         }
         break;
       default:

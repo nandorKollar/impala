@@ -180,7 +180,7 @@ public class CreateTableLikeStmt extends StatementBase {
     // org.apache.impala.util.IcebergSchemaConverter.fromImpalaType method.
     if (fileFormat_ == THdfsFileFormat.ICEBERG && !IcebergTable.isIcebergTable(
         srcTable.getMetaStoreTable())) {
-      throw new AnalysisException(srcTable.getFullName() + " cannot be cloned into an "
+      throw new AnalysisException(srcTable.getTableName() + " cannot be cloned into an "
           + "Iceberg table because it is not an Iceberg table.");
     } else if (fileFormat_ == THdfsFileFormat.JDBC) {
       throw new AnalysisException("CREATE TABLE LIKE is not supported for JDBC tables.");
@@ -224,10 +224,10 @@ public class CreateTableLikeStmt extends StatementBase {
       throw new AnalysisException(String.format(
           "%s cannot be cloned into a %s table: CREATE TABLE LIKE is not supported "
               + "between Kudu tables and non-Kudu tables.",
-          srcTable.getFullName(), fileFormat_.toString()));
+          srcTable.getTableName(), fileFormat_));
     }
     if (sortColumns_ != null && KuduTable.isKuduTable(srcTable.getMetaStoreTable())) {
-      throw new AnalysisException(srcTable.getFullName()
+      throw new AnalysisException(srcTable.getTableName()
           + " cannot be cloned because SORT BY is not supported for Kudu tables.");
     }
     if (srcTable instanceof KuduTable) {

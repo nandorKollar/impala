@@ -2927,7 +2927,7 @@ public class MetastoreEventsProcessorTest {
         // open and alloc write id events should be processed by event processor
         // these events are ignored for non-partitioned tables
         assertTrue(String.format("Expected last synced event id: %s for table %s to be "
-                + "greater than %s", tbl.getLastSyncedEventId(), tbl.getFullName(),
+                + "greater than %s", tbl.getLastSyncedEventId(), tbl.getTableName(),
             lastSyncedEventId), tbl.getLastSyncedEventId() > lastSyncedEventId);
       }
       lastSyncedEventId = tbl.getLastSyncedEventId();
@@ -2960,14 +2960,14 @@ public class MetastoreEventsProcessorTest {
         assertEquals(0, numFiles);
         if (isPartitioned) {
           assertTrue(String.format("Expected last synced event id: %s for table %s to be "
-                  + "greater than %s", tbl.getLastSyncedEventId(), tbl.getFullName(),
+                  + "greater than %s", tbl.getLastSyncedEventId(), tbl.getTableName(),
               lastSyncedEventId), tbl.getLastSyncedEventId() > lastSyncedEventId);
         }
       } else {
         assertTrue(writeIdList.isWriteIdValid(writeId));
         assertEquals(1, numFiles);
         assertTrue(String.format("Expected last synced event id: %s for table %s to be "
-                + "greater than %s", tbl.getLastSyncedEventId(), tbl.getFullName(),
+                + "greater than %s", tbl.getLastSyncedEventId(), tbl.getTableName(),
             lastSyncedEventId), tbl.getLastSyncedEventId() > lastSyncedEventId);
 
       }
@@ -3371,7 +3371,7 @@ public class MetastoreEventsProcessorTest {
       // metadataOpts. Assert that partition is loaded back in tbl
       if (!catalog_.tryWriteLock(tbl)) {
         throw new CatalogException("Couldn't acquire write lock on table: " +
-            tbl.getFullName());
+            tbl.getTableName());
       }
       catalog_.getLock().writeLock().unlock();
       try {

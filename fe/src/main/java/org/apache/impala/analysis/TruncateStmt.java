@@ -68,7 +68,7 @@ public class TruncateStmt extends StatementBase implements SingleTableStmt {
     // We only support truncating hdfs tables now
     if (!(table_ instanceof FeFsTable)) {
       throw new AnalysisException(String.format(
-          "TRUNCATE TABLE not supported on non-HDFS table: %s", table_.getFullName()));
+          "TRUNCATE TABLE not supported on non-HDFS table: %s", table_.getTableName()));
     }
     Analyzer.ensureTableNotFullAcid(table_, "TRUNCATE");
     Analyzer.checkTableCapability(table_, Analyzer.OperationType.WRITE);

@@ -224,7 +224,7 @@ abstract public class ScanNode extends PlanNode {
   protected String debugString() {
     return MoreObjects.toStringHelper(this)
         .add("tid", desc_.getId().asInt())
-        .add("tblName", desc_.getTable().getFullName())
+        .add("tblName", desc_.getTable().getTableName())
         .add("keyRanges", "")
         .addValue(super.debugString())
         .toString();

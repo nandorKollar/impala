@@ -551,7 +551,7 @@ public class ColumnLineageGraph {
     if (tbl instanceof FeView) return VIEW;
     if (tbl instanceof VirtualTable) return VIRTUAL;
     if (tbl instanceof FeDataSourceTable) return EXTERNAL_DATASOURCE;
-    LOG.error(String.format("Table '%s' has unknown type: '%s'", tbl.getFullName(),
+    LOG.error(String.format("Table '%s' has unknown type: '%s'", tbl.getTableName(),
         tbl.getClass().getName()));
     return "unknown";
   }

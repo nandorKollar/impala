@@ -95,7 +95,7 @@ public class StmtMetadataLoaderTest {
     int idx = 0;
     for (FeTable t: stmtTableCache.tables.values()) {
       Assert.assertTrue(t.isLoaded());
-      actualTables[idx++] = t.getFullName();
+      actualTables[idx++] = t.getTableName().fullName();
     }
     Arrays.sort(expectedTables);
     Arrays.sort(actualTables);
@@ -103,11 +103,11 @@ public class StmtMetadataLoaderTest {
   }
 
   private void validateTablesWriteIds(StmtTableCache stmtTableCache) {
-    Assert.assertTrue(stmtTableCache.tables.size() > 0);
+    Assert.assertFalse(stmtTableCache.tables.isEmpty());
     for (FeTable t: stmtTableCache.tables.values()) {
       Assert.assertTrue(t.isLoaded());
-      Assert.assertTrue(t.getValidWriteIds() != null);
-      Assert.assertTrue(t.getValidWriteIds().isWriteIdValid(t.getWriteId()));
+      Assert.assertNotNull(t.getValidWriteIds());
+      Assert.assertTrue(t.getValidWriteIds().isWriteIdValid(MetastoreShim.getWriteIdFromMSTable(t.getMetaStoreTable())));
     }
   }
 

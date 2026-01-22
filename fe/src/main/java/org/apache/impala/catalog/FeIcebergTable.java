@@ -1053,7 +1053,7 @@ public interface FeIcebergTable extends FeFsTable {
             .sum();
       } catch (TableLoadingException e) {
         throw new AnalysisException("Failed to get record count of Iceberg V2 table: "
-            + table.getFullName() ,e);
+            + table.getTableName(), e);
       }
     }
 
@@ -1075,7 +1075,7 @@ public interface FeIcebergTable extends FeFsTable {
               || !groupedFiles.equalityDeleteFiles.isEmpty();
         } catch (TableLoadingException e) {
           throw new AnalysisException("Failed to get record count of Iceberg V2 table: "
-              + table.getFullName(), e);
+              + table.getTableName(), e);
         }
       }
     }

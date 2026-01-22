@@ -83,7 +83,7 @@ public class AlterTableSetLocationStmt extends AlterTableSetStmt {
     Preconditions.checkNotNull(table);
     if (table instanceof FeIcebergTable) {
       throw new AnalysisException("ALTER TABLE SET LOCATION is not supported on Iceberg "
-          + "tables: " + table.getFullName());
+          + "tables: " + table.getTableName());
     }
 
     if (table instanceof FeFsTable) {
@@ -113,16 +113,16 @@ public class AlterTableSetLocationStmt extends AlterTableSetStmt {
         if (partitions.get(0).isMarkedCached()) {
           throw new AnalysisException(String.format("Target partition is cached, " +
               "please uncache before changing the location using: ALTER TABLE %s %s " +
-              "SET UNCACHED", table.getFullName(), getPartitionSet().toSql()));
+              "SET UNCACHED", table.getTableName(), getPartitionSet().toSql()));
         }
       } else if (hdfsTable.isMarkedCached()) {
         throw new AnalysisException(String.format("Target table is cached, please " +
             "uncache before changing the location using: ALTER TABLE %s SET UNCACHED",
-            table.getFullName()));
+            table.getTableName()));
       }
     } else if (table instanceof FeKuduTable) {
       throw new AnalysisException("ALTER TABLE SET LOCATION is not supported on Kudu " +
-          "tables: " + table.getFullName());
+          "tables: " + table.getTableName());
     }
   }
 }

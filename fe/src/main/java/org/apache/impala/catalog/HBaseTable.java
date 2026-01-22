@@ -169,7 +169,7 @@ public class HBaseTable extends Table implements FeHBaseTable {
   public TTableDescriptor toThriftDescriptor(int tableId,
       Set<Long> referencedPartitions) {
     TTableDescriptor tableDescriptor =
-        new TTableDescriptor(tableId, TTableType.HBASE_TABLE, getTColumnDescriptors(),
+        new TTableDescriptor(tableId, TTableType.HBASE_TABLE, Column.toTColumnDescriptors(getColumns()),
             numClusteringCols_, name_, db_.getName());
     tableDescriptor.setHbaseTable(Util.getTHBaseTable(this));
     return tableDescriptor;

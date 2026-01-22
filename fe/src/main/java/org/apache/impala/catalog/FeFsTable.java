@@ -269,7 +269,7 @@ public interface FeFsTable extends FeTable {
     if (partCol.size() != 1) {
       throw new AssertionError(String.format(
           "expected exactly one result fetching partition ID %s from table %s " +
-              "(got %s)", partitionId, getFullName(), partCol.size()));
+              "(got %s)", partitionId, getTableName(), partCol.size()));
     }
     return Iterables.getOnlyElement(partCol);
   }
@@ -300,7 +300,7 @@ public interface FeFsTable extends FeTable {
     try {
       tableFs = (new Path(getLocation())).getFileSystem(CONF);
     } catch (IOException e) {
-      throw new CatalogException("Invalid table path for table: " + getFullName(), e);
+      throw new CatalogException("Invalid table path for table: " + getTableName(), e);
     }
     return tableFs;
   }
@@ -906,7 +906,7 @@ public interface FeFsTable extends FeTable {
         List<LiteralExpr> partitionValues = partition.getPartitionValues();
         Preconditions.checkState(partitionValues.size() == targetValues.size(),
             "Partition values not match in table %s: %s != %s",
-            table.getFullName(), partitionValues.size(), targetValues.size());
+            table.getTableName(), partitionValues.size(), targetValues.size());
         boolean matchFound = true;
         for (int i = 0; i < targetValues.size(); ++i) {
           String value;
@@ -916,7 +916,7 @@ public interface FeFsTable extends FeTable {
             value = partitionValues.get(i).getStringValue();
             Preconditions.checkNotNull(value,
                 "Got null string from non-null partition value of table %s: i=%s",
-                table.getFullName(), i);
+                table.getTableName(), i);
             // See IMPALA-252: we deliberately map empty strings on to
             // NULL when they're in partition columns. This is for
             // backwards compatibility with Hive, and is clearly broken.
@@ -945,7 +945,7 @@ public interface FeFsTable extends FeTable {
         String operationType) throws AnalysisException {
       String noWriteAccessErrorMsg = String.format("Unable to %s into " +
           "target table (%s) because Impala does not have WRITE access to HDFS " +
-          "location: ", operationType, table.getFullName());
+          "location: ", operationType, table.getTableName());
 
       PrunablePartition existingTargetPartition = null;
       if (partitionKeyValues != null) {

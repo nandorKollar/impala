@@ -136,7 +136,7 @@ public class PaimonScanNode extends ScanNode {
       fieldIdMap_.add(paimonColumn.getFieldId());
     }
     Preconditions.checkArgument(projection_.length == desc_.getSlots().size());
-    LOG.info(String.format("table %s projection fields: %s", table_.getFullName(),
+    LOG.info(String.format("table %s projection fields: %s", table_.getTableName(),
         Arrays.toString(projection_)));
   }
 
@@ -258,7 +258,7 @@ public class PaimonScanNode extends ScanNode {
     node.node_type = TPlanNodeType.PAIMON_SCAN_NODE;
     node.paimon_table_scan_node = new TPaimonScanNode(desc_.getId().asInt(),
         ByteBuffer.wrap(SerializationUtils.serialize(paimonApiTable_)),
-        table_.getFullName());
+        table_.getTableName().fullName());
   }
 
   @Override
@@ -273,7 +273,7 @@ public class PaimonScanNode extends ScanNode {
 
     String aliasStr = desc_.hasExplicitAlias() ? " " + desc_.getAlias() : "";
     result.append(String.format("%s%s:%s [%s%s]\n", prefix, id_.toString(), displayName_,
-        table_.getFullName(), aliasStr));
+        table_.getTableName().fullName(), aliasStr));
 
     switch (detailLevel) {
       case MINIMAL: break;
@@ -297,7 +297,7 @@ public class PaimonScanNode extends ScanNode {
   protected String debugString() {
     MoreObjects.ToStringHelper helper = MoreObjects.toStringHelper(this);
     helper.addValue(super.debugString());
-    helper.addValue("paimonTable=" + table_.getFullName());
+    helper.addValue("paimonTable=" + table_.getTableName());
     return helper.toString();
   }
 }

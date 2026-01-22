@@ -218,7 +218,7 @@ public class CatalogdTableInvalidator {
       Reference<Boolean> dbWasAdded = new Reference<>();
       catalog_.invalidateTable(tTableName, tblWasRemoved, dbWasAdded,
           NoOpEventSequence.INSTANCE);
-      LOG.info("Table " + tables.get(i).getFullName() + " invalidated due to memory " +
+      LOG.info("Table " + tables.get(i).getTableName() + " invalidated due to memory " +
           "pressure.");
     }
   }
@@ -236,7 +236,7 @@ public class CatalogdTableInvalidator {
         catalog_.invalidateTable(tTableName, tblWasRemoved, dbWasAdded,
             NoOpEventSequence.INSTANCE);
         LOG.info(
-            "Invalidated " + table.getFullName() + " due to inactivity for " +
+            "Invalidated " + table.getTableName() + " due to inactivity for " +
                 TimeUnit.NANOSECONDS.toSeconds(inactivityTime) + " seconds.");
       }
     }

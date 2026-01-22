@@ -77,7 +77,7 @@ public class CalciteDb extends AbstractSchema {
         return this;
       }
 
-      throw new UnsupportedFeatureException("Table " + table.getFullName()
+      throw new UnsupportedFeatureException("Table " + table.getTableName()
           + " has unsupported type " + table.getClass().getSimpleName()
           + ". The Calcite planner only supports "
           + "HdfsTable's and FeView's.");

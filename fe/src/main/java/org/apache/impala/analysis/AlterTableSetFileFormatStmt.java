@@ -62,12 +62,12 @@ public class AlterTableSetFileFormatStmt extends AlterTableSetStmt {
     FeTable tbl = getTargetTable();
     if (tbl instanceof FeKuduTable) {
       throw new AnalysisException("ALTER TABLE SET FILEFORMAT is not supported " +
-          "on Kudu tables: " + tbl.getFullName());
+          "on Kudu tables: " + tbl.getTableName());
     }
 
     if (tbl instanceof FeIcebergTable) {
       throw new AnalysisException("ALTER TABLE SET FILEFORMAT is not supported " +
-          "on Iceberg tables: " + tbl.getFullName());
+          "on Iceberg tables: " + tbl.getTableName());
     }
   }
 }

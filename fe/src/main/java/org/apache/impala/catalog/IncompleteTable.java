@@ -149,7 +149,7 @@ public class IncompleteTable extends Table implements FeIncompleteTable {
       table.setTable_type(TTableType.UNLOADED_TABLE);
     }
     if (comment_ != null) {
-      LOG.trace("Setting comment of {}: {}", getFullName(), comment_);
+      LOG.trace("Setting comment of {}: {}", getTableName(), comment_);
       table.setTbl_comment(comment_);
     }
     return table;
@@ -159,7 +159,7 @@ public class IncompleteTable extends Table implements FeIncompleteTable {
   protected void loadFromThrift(TTable thriftTable) {
     if (thriftTable.isSetTbl_comment()) {
       comment_ = thriftTable.getTbl_comment();
-      LOG.trace("Loaded comment from thriftTable of {}: {}", getFullName(), comment_);
+      LOG.trace("Loaded comment from thriftTable of {}: {}", getTableName(), comment_);
     }
     if (thriftTable.isSetLoad_status()) {
       // Since the load status is set, it indicates the table is incomplete due to

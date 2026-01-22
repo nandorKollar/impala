@@ -135,17 +135,17 @@ public abstract class Catalog implements AutoCloseable {
       if (wasLoaded && !isLoaded) {
         numLoadedTables_.decrementAndGet();
         LOG.trace("Replaced loaded table {} with IncompleteTable, " +
-            "loaded tables count: {}", newTbl.getFullName(), numLoadedTables_.get());
+            "loaded tables count: {}", newTbl.getTableName(), numLoadedTables_.get());
       } else if (!wasLoaded && isLoaded) {
         numLoadedTables_.incrementAndGet();
         LOG.trace("Replaced IncompleteTable with loaded table {}, " +
-            "loaded tables count: {}", newTbl.getFullName(), numLoadedTables_.get());
+            "loaded tables count: {}", newTbl.getTableName(), numLoadedTables_.get());
       }
     } else if (!(newTbl instanceof IncompleteTable)) {
       // New table being added and it's loaded
       numLoadedTables_.incrementAndGet();
       LOG.trace("Added new loaded table {}, loaded tables count: {}",
-          newTbl.getFullName(), numLoadedTables_.get());
+          newTbl.getTableName(), numLoadedTables_.get());
     }
   };
 
@@ -155,7 +155,7 @@ public abstract class Catalog implements AutoCloseable {
     if (!(removedTbl instanceof IncompleteTable)) {
       numLoadedTables_.decrementAndGet();
       LOG.trace("Removed loaded table {}, loaded tables count: {}",
-          removedTbl.getFullName(), numLoadedTables_.get());
+          removedTbl.getTableName(), numLoadedTables_.get());
     }
   };
 

@@ -546,7 +546,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
       storageMetadataLoadTime_ = ctxStorageLdTime.stop();
     }
     LOG.info("Loaded file and block metadata for {}. Time taken: {}",
-        getFullName(), PrintUtils.printTimeNs(storageMetadataLoadTime_));
+        getTableName(), PrintUtils.printTimeNs(storageMetadataLoadTime_));
   }
 
   private boolean canSkipReload() {
@@ -585,7 +585,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
     Map<Integer, Long> fieldIdsWithHmsStats = getComputeStatsSnapshotMap(msTable_);
 
     Map<Integer, PuffinStatsLoader.PuffinStatsRecord> puffinNdvs =
-        PuffinStatsLoader.loadPuffinStats(icebergApiTable_, getFullName(),
+        PuffinStatsLoader.loadPuffinStats(icebergApiTable_, getTableName().fullName(),
             fieldIdsWithHmsStats);
     for (Map.Entry<Integer, PuffinStatsLoader.PuffinStatsRecord> entry
         : puffinNdvs.entrySet()) {
@@ -662,7 +662,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
             "Table %s cannot be loaded because it is an " +
             "EXTERNAL table in the HiveCatalog that points to another table. " +
             "Query the original table instead.",
-            getFullName()));
+            getTableName()));
       }
     }
   }
@@ -787,7 +787,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
   public TTableDescriptor toThriftDescriptor(int tableId,
       Set<Long> referencedPartitions) {
     TTableDescriptor desc = new TTableDescriptor(tableId, TTableType.ICEBERG_TABLE,
-        getTColumnDescriptors(), numClusteringCols_, name_, db_.getName());
+        Column.toTColumnDescriptors(getColumns()), numClusteringCols_, name_, db_.getName());
     desc.setIcebergTable(Utils.getTIcebergTable(this, ThriftObjectType.DESCRIPTOR_ONLY));
     desc.setHdfsTable(transformToTHdfsTable(false, ThriftObjectType.DESCRIPTOR_ONLY));
     return desc;
@@ -807,7 +807,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
   @Override
   public TGetPartialCatalogObjectResponse getPartialInfo(
       TGetPartialCatalogObjectRequest req) throws CatalogException {
-    Preconditions.checkState(isLoaded(), "unloaded table: %s", getFullName());
+    Preconditions.checkState(isLoaded(), "unloaded table: %s", getTableName());
     TGetPartialCatalogObjectResponse resp = super.getPartialInfo(req);
     Preconditions.checkState(resp.table_info != null);
     boolean wantPartitionInfo = req.table_info_selector.want_partition_files
@@ -827,8 +827,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
       long partId = getPartitionMap().keySet().iterator().next();
       FeFsPartition part = (FeFsPartition) getPartitionMap().get(partId);
       if (part == null) {
-        LOG.warn(String.format("Missing partition ID: %s, Table: %s", partId,
-            getFullName()));
+        LOG.warn("Missing partition ID: {}, Table: {}", partId, getTableName());
         return new TGetPartialCatalogObjectResponse().setLookup_status(
             CatalogLookupStatus.PARTITION_NOT_FOUND);
       }

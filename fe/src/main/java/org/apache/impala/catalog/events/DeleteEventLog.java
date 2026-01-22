@@ -133,7 +133,7 @@ public class DeleteEventLog {
    * identifiers.
    */
   public static String getPartitionKey(HdfsTable hdfsTable, List<String> partValues) {
-    return String.format(PART_KEY_FORMAT_STR, hdfsTable.getFullName(),
+    return String.format(PART_KEY_FORMAT_STR, hdfsTable.getTableName().fullName(),
         FileUtils.makePartName(hdfsTable.getClusteringColNames(), partValues));
   }
 

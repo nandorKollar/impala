@@ -54,7 +54,7 @@ public class AlterTableRecoverPartitionsStmt extends AlterTableStmt {
 
     if (table_ instanceof FeIcebergTable) {
       throw new AnalysisException("ALTER TABLE RECOVER PARTITIONS is not supported " +
-          "on Iceberg tables: " + table_.getFullName());
+          "on Iceberg tables: " + table_.getTableName());
     }
 
     // Make sure the target table is partitioned.

@@ -104,7 +104,7 @@ public class SystemTableScanNode extends ScanNode {
   protected String debugString() {
     return MoreObjects.toStringHelper(this)
         .add("tid", desc_.getId().asInt())
-        .add("TblName", desc_.getTable().getFullName())
+        .add("TblName", desc_.getTable().getTableName())
         .addValue(super.debugString())
         .toString();
   }
@@ -127,13 +127,13 @@ public class SystemTableScanNode extends ScanNode {
       String prefix, String detailPrefix, TExplainLevel detailLevel) {
     StringBuilder output = new StringBuilder();
     String aliasStr = "";
-    if (!table_.getFullName().equalsIgnoreCase(desc_.getAlias())
+    if (!table_.getTableName().fullName().equalsIgnoreCase(desc_.getAlias())
         && !table_.getName().equalsIgnoreCase(desc_.getAlias())) {
       aliasStr = " " + desc_.getAlias();
     }
 
     output.append(String.format("%s%s:%s [%s%s]\n", prefix, id_.toString(), displayName_,
-        table_.getFullName(), aliasStr));
+        table_.getTableName().fullName(), aliasStr));
 
     if (!conjuncts_.isEmpty()) {
       output.append(prefix + "predicates: " +

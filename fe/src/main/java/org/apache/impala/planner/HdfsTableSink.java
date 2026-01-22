@@ -262,7 +262,7 @@ public class HdfsTableSink extends TableSink {
       partitionKeyStr = tmpBuilder.toString();
     }
     output.append(String.format("%sWRITE TO HDFS [%s%s%s]\n", prefix,
-        targetTable_.getFullName(), overwriteStr, partitionKeyStr));
+        targetTable_.getTableName(), overwriteStr, partitionKeyStr));
     // Report the total number of partitions, independent of the number of nodes
     // and the data partition of the fragment executing this sink.
     if (!(targetTable_ instanceof FeIcebergTable)) {

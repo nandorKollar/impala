@@ -149,12 +149,12 @@ public class View extends Table implements FeView {
       // of tables that the user triggering this load may not have privileges on.
       throw new TableLoadingException(
           String.format("Failed to parse view-definition statement of view: " +
-              "%s", view.getFullName()));
+              "%s", view.getTableName()));
     }
     // Make sure the view definition parses to a query statement.
     if (!(node instanceof QueryStmt)) {
       throw new TableLoadingException(String.format("View definition of %s " +
-          "is not a query statement", view.getFullName()));
+          "is not a query statement", view.getTableName()));
     }
     return (QueryStmt) node;
   }

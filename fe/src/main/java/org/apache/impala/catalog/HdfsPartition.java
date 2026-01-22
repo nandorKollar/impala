@@ -500,7 +500,7 @@ public class HdfsPartition extends CatalogObjectImpl implements FeFsPartition {
       boolean isInsertEvent, long versionNumber) {
     Preconditions.checkState(table_.isWriteLockedByCurrentThread(),
         "removeFromVersionsForInflightEvents called without holding the table lock on "
-            + "partition " + getPartitionName() + " of table " + table_.getFullName());
+            + "partition " + getPartitionName() + " of table " + table_.getTableName());
     boolean ret = inFlightEvents_.remove(isInsertEvent, versionNumber);
     if (!ret) {
       LOG.trace("Failed to remove in-flight version number {}: in-flight events: {}",
@@ -519,13 +519,13 @@ public class HdfsPartition extends CatalogObjectImpl implements FeFsPartition {
   public void addToVersionsForInflightEvents(boolean isInsertEvent, long versionNumber) {
     Preconditions.checkState(table_.isWriteLockedByCurrentThread(),
         "addToVersionsForInflightEvents called without holding the table lock on "
-            + "partition " + getPartitionName() + " of table " + table_.getFullName());
+            + "partition " + getPartitionName() + " of table " + table_.getTableName());
     boolean added = inFlightEvents_.add(isInsertEvent, versionNumber);
     if (!added) {
       LOG.warn(String.format("Could not add %s version to the partition %s of table %s. "
           + "This could cause unnecessary refresh of the partition when the event is"
           + "received by the Events processor.", versionNumber, getPartitionName(),
-          getTable().getFullName()));
+          getTable().getTableName()));
     }
     LOG.trace("{} {} to in-flight list {}",
         (added ? "Added" : "Could not add"), versionNumber, inFlightEvents_.print());
@@ -632,7 +632,7 @@ public class HdfsPartition extends CatalogObjectImpl implements FeFsPartition {
         } catch (CatalogException ex) {
           if (LOG.isDebugEnabled()) {
             LOG.debug("Could not use cached file descriptors of partition {} of table {}"
-                    + " for writeIdList {}", getPartitionName(), getTable().getFullName(),
+                    + " for writeIdList {}", getPartitionName(), getTable().getTableName(),
                 reqWriteIdList, ex);
           }
           return new Pair<>(partInfo, null);
@@ -1042,7 +1042,7 @@ public class HdfsPartition extends CatalogObjectImpl implements FeFsPartition {
         setPartitionStatsBytes(partitionStats, hasIncrStats.getRef());
       } catch (ImpalaException e) {
         LOG.warn(String.format("Failed to set partition stats for table %s partition %s",
-            getTable().getFullName(), getPartitionName()), e);
+            getTable().getTableName(), getPartitionName()), e);
       } finally {
         // Delete the incremental stats entries. Cleared even on error conditions so that
         // we do not persist the corrupt entries in the hmsParameters_ map when it is
@@ -1255,12 +1255,12 @@ public class HdfsPartition extends CatalogObjectImpl implements FeFsPartition {
         long versionNumber) {
       Preconditions.checkState(table_.isWriteLockedByCurrentThread(),
           "addToVersionsForInflightEvents called without holding the table lock on "
-              + "partition " + getPartitionName() + " of table " + table_.getFullName());
+              + "partition " + getPartitionName() + " of table " + table_.getTableName());
       if (!inFlightEvents_.add(isInsertEvent, versionNumber)) {
         LOG.warn("Could not add {} version to the partition {} of table {}. This could " +
                 "cause unnecessary refresh of the partition when the event is received " +
                 "by the Events processor.",
-            versionNumber, getPartitionName(), getTable().getFullName());
+            versionNumber, getPartitionName(), getTable().getTableName());
       }
     }
 

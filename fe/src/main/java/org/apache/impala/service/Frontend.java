@@ -1253,7 +1253,7 @@ public class Frontend {
       String tableOwner = table_.getOwnerUser();
       if (tableOwner == null) {
         LOG.info("Table {} not yet loaded, ignoring it in table listing.",
-            table_.getFullName());
+            table_.getTableName());
       }
       return isAccessibleToUser(
           table_.getDb().getName(), table_.getName(), tableOwner, user_);
@@ -2980,7 +2980,7 @@ public class Frontend {
     // Add the catalog versions and loaded timestamps.
     FrontendProfile.getCurrent().addInfoString("Original Table Versions",
         stmtTableCache.tables.values().stream()
-            .map(t -> String.join(", ", t.getFullName(),
+            .map(t -> String.join(", ", t.getTableName().fullName(),
                 Long.toString(t.getCatalogVersion()),
                 Long.toString(t.getLastLoadedTimeMs()),
                 new Date(t.getLastLoadedTimeMs()).toString()))

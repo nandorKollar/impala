@@ -125,7 +125,7 @@ public class IcebergMergeImpl implements MergeImpl {
         && !BackendConfig.INSTANCE.icebergAlwaysAllowMergeOnReadOperations()) {
       throw new AnalysisException(String.format(
           "Unsupported '%s': '%s' for Iceberg table: %s",
-          TableProperties.MERGE_MODE, modifyWriteMode, icebergTable_.getFullName()));
+          TableProperties.MERGE_MODE, modifyWriteMode, icebergTable_.getTableName()));
     }
     for (Column column : icebergTable_.getColumns()) {
       Path slotPath =

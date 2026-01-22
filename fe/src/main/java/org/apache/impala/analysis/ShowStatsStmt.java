@@ -117,7 +117,7 @@ public class ShowStatsStmt extends StatementBase implements SingleTableStmt {
     Preconditions.checkNotNull(table_);
     if (table_ instanceof FeView) {
       throw new AnalysisException(String.format(
-          "%s not applicable to a view: %s", getSqlPrefix(), table_.getFullName()));
+          "%s not applicable to a view: %s", getSqlPrefix(), table_.getTableName()));
     }
     if (table_ instanceof FeFsTable) {
       // There two cases here: Non-partitioned hdfs table and non-partitioned
@@ -141,11 +141,11 @@ public class ShowStatsStmt extends StatementBase implements SingleTableStmt {
         }
       }
       if (!partitioned) {
-        throw new AnalysisException("Table is not partitioned: " + table_.getFullName());
+        throw new AnalysisException("Table is not partitioned: " + table_.getTableName());
       }
       if (op_ == TShowStatsOp.RANGE_PARTITIONS || op_ == TShowStatsOp.HASH_SCHEMA) {
         throw new AnalysisException(getSqlPrefix() + " must target a Kudu table: " +
-            table_.getFullName());
+            table_.getTableName());
       }
     } else if (table_ instanceof FePaimonTable) {
       PaimonAnalyzer.analyzeShowStatStmt(this, (FePaimonTable) table_, analyzer);
@@ -154,15 +154,15 @@ public class ShowStatsStmt extends StatementBase implements SingleTableStmt {
       if ((op_ == TShowStatsOp.RANGE_PARTITIONS || op_ == TShowStatsOp.HASH_SCHEMA) &&
           FeKuduTable.Utils.getRangePartitioningColNames(kuduTable).isEmpty()) {
         throw new AnalysisException(getSqlPrefix() + " requested but table does not " +
-            "have range partitions: " + table_.getFullName());
+            "have range partitions: " + table_.getTableName());
       }
     } else {
       if (op_ == TShowStatsOp.RANGE_PARTITIONS || op_ == TShowStatsOp.HASH_SCHEMA) {
         throw new AnalysisException(getSqlPrefix() + " must target a Kudu table: " +
-            table_.getFullName());
+            table_.getTableName());
       } else if (op_ == TShowStatsOp.PARTITIONS) {
         throw new AnalysisException(getSqlPrefix() +
-            " must target an HDFS or Kudu table: " + table_.getFullName());
+            " must target an HDFS or Kudu table: " + table_.getTableName());
       }
     }
     show_column_minmax_stats_ =

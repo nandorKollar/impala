@@ -265,7 +265,7 @@ public class TupleDescriptor {
   }
 
   public String debugString() {
-    String tblStr = (getTable() == null ? "null" : getTable().getFullName());
+    String tblStr = (getTable() == null ? "null" : getTable().getTableName().fullName());
     List<String> slotStrings = new ArrayList<>();
     for (SlotDescriptor slot : slots_) {
       slotStrings.add(slot.debugString());

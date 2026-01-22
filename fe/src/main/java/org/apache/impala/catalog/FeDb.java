@@ -16,7 +16,6 @@
 // under the License.
 package org.apache.impala.catalog;
 
-import java.util.Comparator;
 import java.util.Set;
 import java.util.List;
 
@@ -24,7 +23,6 @@ import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.impala.analysis.ColumnDef;
 import org.apache.impala.analysis.KuduPartitionParam;
-import org.apache.impala.common.ImpalaException;
 import org.apache.impala.common.ImpalaRuntimeException;
 import org.apache.impala.thrift.TDatabase;
 import org.apache.impala.thrift.TFunctionCategory;
@@ -35,20 +33,6 @@ import org.apache.impala.util.PatternMatcher;
  * Frontend interface for interacting with a database.
  */
 public interface FeDb extends HasName {
-
-  Comparator<FeDb> NAME_COMPARATOR = new Comparator<FeDb>() {
-    @Override
-    public int compare(FeDb db1, FeDb db2) {
-      return db1.getName().compareTo(db2.getName());
-    }
-  };
-
-  /**
-   * @return the name of the database
-   */
-  @Override
-  String getName();
-
   /**
    * @return the metastore.api.Database object this Database was created from,
    * or null if it is not related to a hive database such as builtins_db.

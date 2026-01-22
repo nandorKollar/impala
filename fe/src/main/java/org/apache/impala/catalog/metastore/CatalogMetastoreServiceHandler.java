@@ -880,7 +880,7 @@ public class CatalogMetastoreServiceHandler extends MetastoreServiceHandler {
       if (!catalog_.tryWriteLock(
           new org.apache.impala.catalog.Table[] {srcTbl, destinationTbl})) {
         throw new CatalogException("Couldn't acquire lock on tables: "
-            + srcTbl.getFullName() + ", " + destinationTbl.getFullName());
+            + srcTbl.getTableName() + ", " + destinationTbl.getTableName());
       }
 
       exchangedPartition = super.exchange_partition(partitionSpecMap, sourceDbWithCatalog,
@@ -927,7 +927,7 @@ public class CatalogMetastoreServiceHandler extends MetastoreServiceHandler {
       if (!catalog_.tryWriteLock(
           new org.apache.impala.catalog.Table[] {srcTbl, destinationTbl})) {
         throw new CatalogException("Couldn't acquire lock on tables: "
-            + srcTbl.getFullName() + ", " + destinationTbl.getFullName());
+            + srcTbl.getTableName() + ", " + destinationTbl.getTableName());
       }
 
       exchangedPartitions = super.exchange_partitions(partitionSpecs, sourceDbWithCatalog,
@@ -1224,7 +1224,7 @@ public class CatalogMetastoreServiceHandler extends MetastoreServiceHandler {
     if (!catalog_.tryWriteLock(tbl)) {
       // should it be an internal exception?
       CatalogException e =
-          new CatalogException("Could not acquire lock on table: " + tbl.getFullName());
+          new CatalogException("Could not acquire lock on table: " + tbl.getTableName());
       rethrowException(e, apiName);
     }
     return tbl;
@@ -1265,13 +1265,13 @@ public class CatalogMetastoreServiceHandler extends MetastoreServiceHandler {
         BackendConfig.INSTANCE.enableSyncToLatestEventOnDdls(),
         "sync to latest event flag should be set to true");
     Preconditions.checkState(tbl.isWriteLockedByCurrentThread(),
-        "Thread does not have write lock on table %s", tbl.getFullName());
+        "Thread does not have write lock on table %s", tbl.getTableName());
     try {
       MetastoreEventsProcessor.syncToLatestEventId(catalog_, tbl,
           metastoreEventFactory_, metastoreEventsMetrics_);
     } catch (Exception e) {
       String errMsg = String.format(SYNC_TABLE_LATEST_EVENT_ID_ERR_MSG,
-          tbl.getFullName(), apiName);
+          tbl.getTableName(), apiName);
       LOG.error("{}. Exception stacktrace: {} ", errMsg,
           ExceptionUtils.getStackTrace(e));
       rethrowException(e, apiName);

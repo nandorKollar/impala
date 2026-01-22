@@ -155,27 +155,23 @@ public abstract class FeCatalogUtils {
     for (ColumnStatisticsObj stats: colStats) {
       Column col = table.getColumn(stats.getColName());
       Preconditions.checkNotNull(col, "Unable to find column %s in table %s",
-          stats.getColName(), table.getFullName());
+          stats.getColName(), table.getTableName());
       if (!ColumnStats.isSupportedColType(col.getType())) {
-        LOG.warn(String.format(
-            "Statistics for %s, column %s are not supported as column " +
-            "has type %s", table.getFullName(), col.getName(), col.getType()));
+        LOG.warn("Statistics for {}, column {} are not supported as column " +
+                "has type {}", table.getTableName(), col.getName(), col.getType());
         continue;
       }
       ColumnStatisticsData colStatsData = stats.getStatsData();
       if (testStats != null && testStats.hasColumn(stats.getColName())) {
         colStatsData = testStats.getColumnStats(stats.getColName());
         Preconditions.checkNotNull(colStatsData);
-        LOG.info("Sideload stats for " + table.getFullName() + "." + stats.getColName()
-            + ". " + colStatsData);
+          LOG.info("Sideload stats for {}.{}. {}", table.getTableName(), stats.getColName(), colStatsData);
       }
 
       if (!col.updateStats(colStatsData)) {
-        LOG.warn(String.format(
-            "Failed to load column stats for %s, column %s. Stats may be " +
-            "incompatible with column type %s. Consider regenerating statistics " +
-            "for %s.", table.getFullName(), col.getName(), col.getType(),
-            table.getFullName()));
+        LOG.warn("Failed to load column stats for {}, column {}. Stats may be " +
+                "incompatible with column type {}. Consider regenerating statistics " +
+                "for {}.", table.getTableName(), col.getName(), col.getType(), table.getTableName());
       }
     }
   }
@@ -212,7 +208,7 @@ public abstract class FeCatalogUtils {
         hmsPartitionValues.size() == table.getNumClusteringCols(),
         "Cannot parse partition values '%s' for table %s: " +
         "expected %s values but got %s",
-        hmsPartitionValues, table.getFullName(),
+        hmsPartitionValues, table.getTableName(),
         table.getNumClusteringCols(), hmsPartitionValues.size());
     List<LiteralExpr> keyValues = new ArrayList<>();
     for (String partitionKey : hmsPartitionValues) {

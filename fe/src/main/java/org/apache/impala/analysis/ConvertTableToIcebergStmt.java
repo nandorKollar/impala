@@ -168,7 +168,7 @@ public class ConvertTableToIcebergStmt extends StatementBase implements SingleTa
 
   private void createSubQueryStrings(FeFsTable table)  {
     setHdfsTablePropertiesQuery_ = SetTblProps.builder()
-              .table(table.getFullName())
+              .table(table.getTableName().fullName())
               .property(Table.TBL_PROP_EXTERNAL_TABLE_PURGE, "false")
               .property("TRANSLATED_TO_EXTERNAL", "FALSE").build();
 
@@ -176,7 +176,7 @@ public class ConvertTableToIcebergStmt extends StatementBase implements SingleTa
     Preconditions.checkState(tmpHdfsTableName_.isFullyQualified());
 
     renameHdfsTableToTemporaryQuery_ = Rename.builder()
-        .source(table.getFullName())
+        .source(table.getTableName().fullName())
         .target(tmpHdfsTableName_.toString()).build();
 
     refreshTemporaryHdfsTableQuery_ = Refresh.builder()
@@ -185,7 +185,7 @@ public class ConvertTableToIcebergStmt extends StatementBase implements SingleTa
 
     resetTableNameQuery_ = Rename.builder()
             .source(tmpHdfsTableName_.toString())
-            .target(table.getFullName()).build();
+            .target(table.getTableName().fullName()).build();
 
     if (!IcebergUtil.isHiveCatalog(properties_)) {
       Preconditions.checkState(tableName_.isFullyQualified());

@@ -42,7 +42,7 @@ public class HBaseTableSink extends TableSink {
   @Override
   public void appendSinkExplainString(String prefix, String detailPrefix,
       TQueryOptions queryOptions, TExplainLevel explainLevel, StringBuilder output) {
-    output.append(prefix + "WRITE TO HBASE table=" + targetTable_.getFullName() + "\n");
+    output.append(prefix + "WRITE TO HBASE table=" + targetTable_.getTableName().fullName() + "\n");
     if (explainLevel.ordinal() >= TExplainLevel.EXTENDED.ordinal()) {
       output.append(detailPrefix + "output exprs: ")
           .append(Expr.getExplainString(outputExprs_, explainLevel) + "\n");

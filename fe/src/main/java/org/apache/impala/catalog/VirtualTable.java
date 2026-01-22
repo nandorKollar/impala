@@ -97,9 +97,6 @@ public abstract class VirtualTable implements FeTable {
   public String getName() { return name_; }
 
   @Override
-  public String getFullName() { return (db_ != null ? db_.getName() + "." : "") + name_; }
-
-  @Override
   public TableName getTableName() {
     return new TableName(db_ != null ? db_.getName() : null, name_);
   }
@@ -110,7 +107,7 @@ public abstract class VirtualTable implements FeTable {
   @Override
   public List<Column> getColumnsInHiveOrder() {
     List<Column> columns = Lists.newArrayList(getNonClusteringColumns());
-    columns = filterColumnsNotStoredInHms(columns);
+    columns = Column.filterColumnsNotStoredInHms(getMetaStoreTable(), columns);
     columns.addAll(getClusteringColumns());
     return Collections.unmodifiableList(columns);
   }
@@ -142,9 +139,6 @@ public abstract class VirtualTable implements FeTable {
 
   @Override
   public ArrayType getType() { return type_; }
-
-  @Override
-  public long getWriteId() { return 0; }
 
   @Override
   public ValidWriteIdList getValidWriteIds() { return null; }

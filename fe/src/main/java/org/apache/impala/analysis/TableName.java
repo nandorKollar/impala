@@ -18,6 +18,7 @@
 package org.apache.impala.analysis;
 
 import java.util.List;
+import java.util.StringJoiner;
 
 import org.apache.impala.catalog.Catalog;
 import org.apache.impala.common.AnalysisException;
@@ -48,7 +49,6 @@ public class TableName {
   }
 
   public TableName(String db, String tbl, String vTbl) {
-    super();
     Preconditions.checkArgument(db == null || !db.isEmpty());
     this.db_ = db;
     Preconditions.checkNotNull(tbl);
@@ -109,6 +109,18 @@ public class TableName {
     return db_ != null && !db_.isEmpty() && !tbl_.isEmpty();
   }
 
+  public String fullName() {
+    if (db_ == null) {
+      return tbl_;
+    }
+    StringJoiner result = new StringJoiner(".");
+    result.add(db_).add(tbl_);
+    if (vTbl_ != null && !vTbl_.isEmpty()) {
+      result.add(vTbl_);
+    }
+    return result.toString();
+  }
+
   public String toSql() {
     // Enclose the database and/or table name in quotes if Hive cannot parse them
     // without quotes. This is needed for view compatibility between Impala and Hive.
@@ -126,16 +138,7 @@ public class TableName {
 
   @Override
   public String toString() {
-    StringBuilder result = new StringBuilder();
-    if (db_ == null) {
-      result.append(tbl_);
-    } else {
-      result.append(db_ + "." + tbl_);
-      if (vTbl_ != null && !vTbl_.isEmpty()) {
-        result.append( "." + vTbl_);
-      }
-    }
-    return result.toString();
+      return fullName();
   }
 
   public List<String> toPath() {

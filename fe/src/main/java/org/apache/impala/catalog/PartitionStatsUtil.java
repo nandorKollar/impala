@@ -146,7 +146,7 @@ public class PartitionStatsUtil {
     } catch (TException e) {
       String debugString =
           String.format("Error saving partition stats: table %s, partition %s",
-          partition.getTable().getFullName(), partition.getPartitionName());
+          partition.getTable().getTableName(), partition.getPartitionName());
       LOG.error(debugString, e);
       throw new ImpalaRuntimeException(debugString, e);
     }

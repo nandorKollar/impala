@@ -65,7 +65,7 @@ public final class SystemTable extends Table implements FeSystemTable {
       Set<Long> referencedPartitions) {
     // Create thrift descriptors to send to the BE.
     TTableDescriptor tableDescriptor = new TTableDescriptor(tableId,
-        TTableType.SYSTEM_TABLE, getTColumnDescriptors(),
+        TTableType.SYSTEM_TABLE, Column.toTColumnDescriptors(getColumns()),
         getNumClusteringCols(), getName(), getDb().getName());
     tableDescriptor.setSystemTable(getTSystemTable());
     return tableDescriptor;
