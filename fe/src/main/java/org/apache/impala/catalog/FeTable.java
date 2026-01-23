@@ -118,7 +118,10 @@ public interface FeTable {
    * TODO: probably this is schema related method
    */
   List<Column> getColumnsInHiveOrder();
-
+  
+    /**
+     * @return the schema of the table.
+     */
   TableSchema getSchema();
 
   /**
