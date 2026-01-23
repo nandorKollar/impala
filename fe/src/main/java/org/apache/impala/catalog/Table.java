@@ -667,7 +667,7 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
       }
     }
     table.setVirtual_columns(new ArrayList<>());
-    for (VirtualColumn vCol : getVirtualColumns()) {
+    for (VirtualColumn vCol : schema.getVirtualColumns()) {
       table.addToVirtual_columns(vCol.toThrift());
     }
 
@@ -774,7 +774,7 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
       // is done while we continue to hold the table lock.
       resp.table_info.setHms_table(getMetaStoreTable().deepCopy());
       resp.table_info.setVirtual_columns(new ArrayList<>());
-      for (VirtualColumn vCol : getVirtualColumns()) {
+      for (VirtualColumn vCol : schema.getVirtualColumns()) {
         resp.table_info.addToVirtual_columns(vCol.toThrift());
       }
     }
@@ -844,9 +844,6 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
   public String getTableComment() {
     return MetadataOp.getTableComment(msTable_);
   }
-
-  @Override // FeTable
-  public List<VirtualColumn> getVirtualColumns() { return getSchema().getVirtualColumns(); }
 
   /**
    * Subclasses should override this if they provide a storage handler class. Currently

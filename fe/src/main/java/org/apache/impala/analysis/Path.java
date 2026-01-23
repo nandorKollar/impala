@@ -299,7 +299,7 @@ public class Path {
     if (rawPath_.size() != 1) return false;
 
     String colName = rawPath_.get(0);
-    List<VirtualColumn> virtualColumns = rootTable_.getVirtualColumns();
+    List<VirtualColumn> virtualColumns = rootTable_.getSchema().getVirtualColumns();
     for (VirtualColumn vCol : virtualColumns) {
       if (vCol.getName().equalsIgnoreCase(colName)) {
         virtualColType_ = vCol.getVirtualColumnType();

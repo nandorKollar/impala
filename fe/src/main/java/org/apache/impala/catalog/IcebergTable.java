@@ -852,7 +852,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
     resp.table_info.setIs_marked_cached(isMarkedCached());
 
     // Add IcebergTable virtual columns.
-    for (VirtualColumn vCol : getVirtualColumns()) {
+    for (VirtualColumn vCol : getSchema().getVirtualColumns()) {
       resp.table_info.addToVirtual_columns(vCol.toThrift());
     }
 

@@ -285,9 +285,6 @@ abstract class LocalTable implements FeTable {
   }
 
   @Override
-  public List<VirtualColumn> getVirtualColumns() { return schema_.getVirtualColumns(); }
-
-  @Override
   public int getNumClusteringCols() {
     return schema_.getNumClusteringCols();
   }

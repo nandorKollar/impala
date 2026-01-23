@@ -466,11 +466,6 @@ class ForwardingFeIcebergTable implements FeIcebergTable {
   }
 
   @Override
-  public List<VirtualColumn> getVirtualColumns() {
-    return base.getVirtualColumns();
-  }
-
-  @Override
   public List<Column> getColumnsInHiveOrder() {
     return base.getColumnsInHiveOrder();
   }

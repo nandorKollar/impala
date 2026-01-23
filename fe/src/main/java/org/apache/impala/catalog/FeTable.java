@@ -17,7 +17,6 @@
 package org.apache.impala.catalog;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -102,14 +101,6 @@ public interface FeTable {
    * @return the comment of this table
    */
   String getTableComment();
-
-  /**
-   * @return the virtual columns of this table
-   * TODO: replace with corresponding method on TableSchema
-   */
-  default List<VirtualColumn> getVirtualColumns() {
-    return Collections.emptyList();
-  }
 
   /**
    * @return an unmodifiable list of all columns, but with partition columns at the end of

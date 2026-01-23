@@ -352,7 +352,7 @@ public abstract class FeCatalogUtils {
       res.addToColumns(c.toThrift());
     }
     res.setVirtual_columns(new ArrayList<>());
-    for (VirtualColumn c : table.getVirtualColumns()) {
+    for (VirtualColumn c : table.getSchema().getVirtualColumns()) {
       res.addToVirtual_columns(c.toThrift());
     }
     if (table instanceof LocalFsTable) {

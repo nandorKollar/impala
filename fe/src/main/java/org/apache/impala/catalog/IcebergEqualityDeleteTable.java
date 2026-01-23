@@ -66,9 +66,4 @@ public class IcebergEqualityDeleteTable extends IcebergDeleteTable  {
               0);
     }
   }
-
-  @Override
-  public List<VirtualColumn> getVirtualColumns() {
-    return getSchema().getVirtualColumns();
-  }
 }
