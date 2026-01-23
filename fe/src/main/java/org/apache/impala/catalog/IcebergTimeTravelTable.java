@@ -53,10 +53,8 @@ import org.apache.impala.util.IcebergSchemaConverter;
 import org.apache.impala.util.ListMap;
 import org.apache.thrift.TException;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -75,14 +73,7 @@ public class IcebergTimeTravelTable
   // The Time Travel parameters that control the schema for the table.
   private final TimeTravelSpec timeTravelSpec_;
 
-  // colsByPos[i] refers to the ith column in the table.
-  protected final ArrayList<Column> colsByPos_ = new ArrayList<>();
-
-  // map from lowercase column name to Column object.
-  protected final Map<String, Column> colsByName_ = new HashMap<>();
-
-  // Type of this table (array of struct) that mirrors the columns. Useful for analysis.
-  protected final ArrayType type_ = new ArrayType(new StructType());
+  private TableSchema schema_;
 
   public IcebergTimeTravelTable(FeIcebergTable base, TimeTravelSpec timeTravelSpec)
       throws AnalysisException {
@@ -116,9 +107,8 @@ public class IcebergTimeTravelTable
       }
     }
     try {
-      for (Column col : IcebergSchemaConverter.convertToImpalaSchema(icebergSchema)) {
-        addColumn(col);
-      }
+      schema_ = new TableSchema(IcebergSchemaConverter.convertToImpalaSchema(icebergSchema),
+        Collections.emptyList(), 0);
     } catch (ImpalaRuntimeException e) {
       throw new AnalysisException("Could not create iceberg schema.", e);
     }
@@ -127,7 +117,7 @@ public class IcebergTimeTravelTable
   @Override
   public List<Column> getColumnsInHiveOrder() {
     Preconditions.checkState(base_.getNumClusteringCols() == 0);
-    return colsByPos_;
+    return schema_.getColumns();
   }
 
   @Override
@@ -137,17 +127,17 @@ public class IcebergTimeTravelTable
 
   @Override
   public Column getColumn(String name) {
-    return colsByName_.get(name.toLowerCase());
+    return schema_.getColumn(name);
   }
 
   @Override // FeTable
   public List<Column> getNonClusteringColumns() {
-    return colsByPos_;
+    return schema_.getNonClusteringColumns();
   }
 
   @Override
   public boolean isClusteringColumn(Column c) {
-    Preconditions.checkArgument(colsByPos_.get(c.getPosition()) == c);
+    Preconditions.checkArgument(schema_.getColumns().get(c.getPosition()) == c);
     return false;
   }
 
@@ -161,18 +151,7 @@ public class IcebergTimeTravelTable
     return desc;
   }
 
-  public ArrayType getType() { return type_; }
-
-  public void addColumn(Column col) {
-    Preconditions.checkState(col instanceof IcebergColumn);
-    IcebergColumn iCol = (IcebergColumn) col;
-    colsByPos_.add(iCol);
-    colsByName_.put(iCol.getName().toLowerCase(), col);
-
-    ((StructType) type_.getItemType())
-        .addField(new IcebergStructField(
-            col.getName(), col.getType(), col.getComment(), iCol.getFieldId()));
-  }
+  public ArrayType getType() { return schema_.getType(); }
 
   @Override
   public THdfsTable transformToTHdfsTable(boolean updatePartitionFlag,

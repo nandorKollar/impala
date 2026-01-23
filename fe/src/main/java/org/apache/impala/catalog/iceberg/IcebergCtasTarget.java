@@ -118,8 +118,8 @@ public class IcebergCtasTarget extends CtasTargetTable implements FeIcebergTable
       // In genIcebergSchema() we did our best to assign correct field ids to columns,
       // but to be sure, let's use Iceberg's API function to assign field ids.
       iceSchema_ = TypeUtil.assignIncreasingFreshIds(iceSchema_);
-      for (Column col : IcebergSchemaConverter.convertToImpalaSchema(iceSchema_)) {
-        addColumn((IcebergColumn)col);
+      for (IcebergColumn col : IcebergSchemaConverter.convertToImpalaSchema(iceSchema_)) {
+        getSchema().addColumn(col);
       }
     } catch (ImpalaRuntimeException ex) {
       throw new CatalogException(
@@ -277,14 +277,6 @@ public class IcebergCtasTarget extends CtasTargetTable implements FeIcebergTable
     return null;
   }
 
-  public void addColumn(IcebergColumn col) {
-    colsByPos_.add(col);
-    colsByName_.put(col.getName().toLowerCase(), col);
-    ((StructType) type_.getItemType()).addField(
-        new IcebergStructField(col.getName(), col.getType(), col.getComment(),
-            col.getFieldId()));
-  }
-
   @Override
   public TTableDescriptor toThriftDescriptor(int tableId,
       Set<Long> referencedPartitions) {
@@ -345,10 +337,5 @@ public class IcebergCtasTarget extends CtasTargetTable implements FeIcebergTable
   @Override
   public String getTableComment() {
     return MetadataOp.getTableComment(msTable_);
-  }
-
-  @Override
-  public TableSchema getSchema() {
-    throw new UnsupportedOperationException("Not yet implemented");
   }
 }

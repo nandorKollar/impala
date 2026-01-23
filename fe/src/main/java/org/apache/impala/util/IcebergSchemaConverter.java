@@ -26,18 +26,13 @@ import java.util.Set;
 
 import com.google.common.collect.Lists;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.hive.HiveSchemaUtil;
 import org.apache.iceberg.types.Types;
-import org.apache.impala.analysis.IcebergPartitionField;
-import org.apache.impala.analysis.IcebergPartitionSpec;
-import org.apache.impala.analysis.IcebergPartitionTransform;
 import org.apache.impala.catalog.ArrayType;
-import org.apache.impala.catalog.Column;
 import org.apache.impala.catalog.IcebergColumn;
 import org.apache.impala.catalog.IcebergStructField;
 import org.apache.impala.catalog.MapType;
@@ -48,22 +43,16 @@ import org.apache.impala.catalog.Type;
 import org.apache.impala.common.ImpalaRuntimeException;
 import org.apache.impala.thrift.TColumn;
 import org.apache.impala.thrift.TColumnType;
-import org.apache.impala.thrift.TIcebergPartitionTransformType;
 
 /**
  * Utility class for converting between Iceberg and Impala schemas and types.
  */
 public class IcebergSchemaConverter {
   // The methods in this class are public and static, hence it's possible to invoke
-  // them from multiple threads. Hence we use this thread-local integer to generate
+  // them from multiple threads. Hence, we use this thread-local integer to generate
   // unique field ids for each schema element. Please note that Iceberg only care about
   // the uniqueness of the field ids, but they will be reassigned by Iceberg.
-  private static ThreadLocal<Integer> iThreadLocal = new ThreadLocal<Integer>() {
-    @Override
-    public Integer initialValue() {
-        return 0;
-    }
-  };
+  private static ThreadLocal<Integer> iThreadLocal = ThreadLocal.withInitial(() -> 0);
 
   /**
    * Transform iceberg type to impala type
@@ -137,9 +126,9 @@ public class IcebergSchemaConverter {
   /**
    * Converts Iceberg schema to an Impala schema.
    */
-  public static List<Column> convertToImpalaSchema(Schema schema)
+  public static List<IcebergColumn> convertToImpalaSchema(Schema schema)
       throws ImpalaRuntimeException {
-    List<Column> ret = new ArrayList<>();
+    List<IcebergColumn> ret = new ArrayList<>();
     int pos = 0;
     for (Types.NestedField column : schema.columns()) {
       Type colType = toImpalaType(column.type());

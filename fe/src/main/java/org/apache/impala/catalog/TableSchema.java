@@ -7,6 +7,7 @@ import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.impala.catalog.local.LocalCatalogException;
 import org.apache.impala.catalog.paimon.PaimonColumn;
+import org.apache.impala.catalog.paimon.PaimonStructField;
 import org.apache.impala.common.ImpalaRuntimeException;
 import org.apache.impala.thrift.TColumn;
 import org.apache.impala.thrift.TColumnDescriptor;
@@ -80,7 +81,7 @@ public final class TableSchema {
         return ret.build();
     }
 
-    public TableSchema(List<Column> columns, int numClusteringCols,
+    public TableSchema(List<? extends Column> columns, int numClusteringCols,
                      String fullTableName, boolean isFullAcidSchema) {
         hasRowIdCol_ = isFullAcidSchema;
         for (Column c: columns) {
@@ -114,7 +115,7 @@ public final class TableSchema {
         this.hasRowIdCol_ = false;
     }
 
-    public TableSchema(List<Column> columns, List<VirtualColumn> virtualColumns, int numClusteringCols) {
+    public TableSchema(List<? extends Column> columns, List<VirtualColumn> virtualColumns, int numClusteringCols) {
         for (Column c: columns) {
             addColumn(c);
         }
@@ -151,8 +152,22 @@ public final class TableSchema {
     public void addColumn(Column col) {
         colsByPos_.add(col);
         colsByName_.put(col.getName().toLowerCase(), col);
-        ((StructType) type_.getItemType()).addField(
-                new StructField(col.getName(), col.getType(), col.getComment()));
+        ((StructType) type_.getItemType()).addField(columnToStructType(col));
+    }
+
+    // TODO: generic TableSchema could save us from the downcasts here
+    private StructField columnToStructType(Column column) {
+        if (column instanceof IcebergColumn) {
+            // Get 'IcebergStructField' for Iceberg tables.
+            IcebergColumn iCol = (IcebergColumn) column;
+            return new IcebergStructField(iCol.getName(), iCol.getType(),
+                iCol.getComment(), iCol.getFieldId());
+        } else if (column instanceof PaimonColumn) {
+            PaimonColumn pCol = (PaimonColumn) column;
+            return new PaimonStructField(pCol.getName(), pCol.getType(),
+                pCol.getComment(), pCol.getFieldId(), pCol.isNullable());
+        }
+        return new StructField(column.getName(), column.getType(), column.getComment());
     }
 
     void clearColumns() {

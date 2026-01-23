@@ -28,11 +28,11 @@ import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.impala.analysis.IcebergPartitionSpec;
 import org.apache.impala.catalog.CatalogObject.ThriftObjectType;
-import org.apache.impala.catalog.Column;
 import org.apache.impala.catalog.FeCatalogUtils;
 import org.apache.impala.catalog.FeFsPartition;
 import org.apache.impala.catalog.FeFsTable;
 import org.apache.impala.catalog.FeIcebergTable;
+import org.apache.impala.catalog.IcebergColumn;
 import org.apache.impala.catalog.IcebergContentFileStore;
 import org.apache.impala.catalog.TableLoadingException;
 import org.apache.impala.catalog.TableSchema;
@@ -52,8 +52,6 @@ import org.apache.impala.util.IcebergUtil;
 
 import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.Immutable;
-
-import org.apache.log4j.Logger;
 
 /**
  * Iceberg table for LocalCatalog
@@ -94,7 +92,7 @@ public class LocalIcebergTable extends LocalTable implements FeIcebergTable {
       warmupMetaProviderCache(db, msTable, ref, fsTable);
       org.apache.iceberg.Table icebergApiTable = db.getCatalog().getMetaProvider()
           .loadIcebergApiTable(ref, tableParams, msTable);
-      List<Column> iceColumns = IcebergSchemaConverter.convertToImpalaSchema(
+      List<IcebergColumn> iceColumns = IcebergSchemaConverter.convertToImpalaSchema(
           icebergApiTable.schema());
       validateColumns(iceColumns, msTable.getSd().getCols());
       TableSchema schema = new TableSchema(iceColumns,
@@ -164,7 +162,7 @@ public class LocalIcebergTable extends LocalTable implements FeIcebergTable {
     addVirtualColumns(ref.getVirtualColumns());
   }
 
-  static void validateColumns(List<Column> impalaCols, List<FieldSchema> hmsCols) {
+  static void validateColumns(List<IcebergColumn> impalaCols, List<FieldSchema> hmsCols) {
     Preconditions.checkState(impalaCols.size() == hmsCols.size());
     for (int i = 0; i < impalaCols.size(); ++i) {
       Preconditions.checkState(
