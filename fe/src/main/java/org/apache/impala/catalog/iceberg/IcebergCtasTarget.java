@@ -48,6 +48,7 @@ import org.apache.impala.catalog.IcebergColumn;
 import org.apache.impala.catalog.IcebergContentFileStore;
 import org.apache.impala.catalog.IcebergStructField;
 import org.apache.impala.catalog.IcebergTable;
+import org.apache.impala.catalog.TableSchema;
 import org.apache.impala.catalog.local.LocalDb;
 import org.apache.impala.catalog.local.LocalFsTable;
 import org.apache.impala.common.ImpalaRuntimeException;
@@ -117,8 +118,8 @@ public class IcebergCtasTarget extends CtasTargetTable implements FeIcebergTable
       // In genIcebergSchema() we did our best to assign correct field ids to columns,
       // but to be sure, let's use Iceberg's API function to assign field ids.
       iceSchema_ = TypeUtil.assignIncreasingFreshIds(iceSchema_);
-      for (Column col : IcebergSchemaConverter.convertToImpalaSchema(iceSchema_)) {
-        addColumn((IcebergColumn)col);
+      for (IcebergColumn col : IcebergSchemaConverter.convertToImpalaSchema(iceSchema_)) {
+        getSchema().addColumn(col);
       }
     } catch (ImpalaRuntimeException ex) {
       throw new CatalogException(
@@ -276,19 +277,11 @@ public class IcebergCtasTarget extends CtasTargetTable implements FeIcebergTable
     return null;
   }
 
-  public void addColumn(IcebergColumn col) {
-    colsByPos_.add(col);
-    colsByName_.put(col.getName().toLowerCase(), col);
-    ((StructType) type_.getItemType()).addField(
-        new IcebergStructField(col.getName(), col.getType(), col.getComment(),
-            col.getFieldId()));
-  }
-
   @Override
   public TTableDescriptor toThriftDescriptor(int tableId,
       Set<Long> referencedPartitions) {
     TTableDescriptor desc = new TTableDescriptor(tableId, TTableType.ICEBERG_TABLE,
-        getTColumnDescriptors(),
+        getSchema().toTColumnDescriptors(),
         getNumClusteringCols(),
         getName(), db_.getName());
 
@@ -317,7 +310,7 @@ public class IcebergCtasTarget extends CtasTargetTable implements FeIcebergTable
     Map<Long, THdfsPartition> idToPartition = new HashMap<>();
     THdfsPartition tPrototypePartition = createPrototypePartition();
     return new THdfsTable(localFsTable.getHdfsBaseDir(),
-        getColumnNames(), localFsTable.getNullPartitionKeyValue(),
+        getSchema().getColumnNames(), localFsTable.getNullPartitionKeyValue(),
         FeFsTable.DEFAULT_NULL_COLUMN_VALUE, idToPartition, tPrototypePartition);
   }
 

@@ -256,7 +256,7 @@ public class Planner {
               // created by Kudu engine. We don't need to compute Lineage graph for the
               // column.
               List<ColumnLabel> targetColLabels = new ArrayList<>();
-              for (String column: targetTable.getColumnNames()) {
+              for (String column: targetTable.getSchema().getColumnNames()) {
                 if (column.equals(Schema.getAutoIncrementingColumnName())) continue;
                 targetColLabels.add(new ColumnLabel(column, targetTable.getTableName(),
                     ColumnLineageGraph.getTableType(targetTable)));

@@ -941,7 +941,7 @@ public class ColumnLineageGraph {
 
   public void addTargetColumnLabels(FeTable dstTable) {
     Preconditions.checkNotNull(dstTable);
-    for (String columnName: dstTable.getColumnNames()) {
+    for (String columnName: dstTable.getSchema().getColumnNames()) {
       targetColumnLabels_.add(new ColumnLabel(columnName, dstTable.getTableName(),
           getTableType(dstTable)));
     }

@@ -429,6 +429,7 @@ public interface FeIcebergTable extends FeFsTable {
         HdfsFileFormat.ICEBERG.serializationLib());
   }
 
+  // TODO: Unused method!
   static void resetIcebergStorageDescriptor(
       org.apache.hadoop.hive.metastore.api.Table modifiedTable,
       org.apache.hadoop.hive.metastore.api.Table originalTable) {

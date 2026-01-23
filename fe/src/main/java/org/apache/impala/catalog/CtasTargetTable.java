@@ -17,14 +17,10 @@
 
 package org.apache.impala.catalog;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
 import org.apache.hadoop.hive.common.ValidWriteIdList;
@@ -33,7 +29,6 @@ import org.apache.impala.analysis.TableName;
 import org.apache.impala.thrift.TCatalogObjectType;
 import org.apache.impala.thrift.TTableDescriptor;
 import org.apache.impala.thrift.TTableStats;
-import org.apache.impala.util.AcidUtils;
 
 /**
  * Helper class for creating CTAS target tables that can be used with Db and LocalDb
@@ -45,18 +40,7 @@ public abstract class CtasTargetTable implements FeTable {
   protected final String name_;
   protected final String owner_;
 
-  // colsByPos[i] refers to the ith column in the table. The first numClusteringCols are
-  // the clustering columns.
-  protected final List<Column> colsByPos_ = new ArrayList<>();
-
-  // map from lowercase column name to Column object.
-  protected final Map<String, Column> colsByName_ = new HashMap<>();
-
-  // Number of clustering columns.
-  protected int numClusteringCols_ = 0;
-
-  // Type of this table (array of struct) that mirrors the columns. Useful for analysis.
-  protected final ArrayType type_ = new ArrayType(new StructType());
+  protected TableSchema schema_;
 
   public CtasTargetTable(org.apache.hadoop.hive.metastore.api.Table msTable, FeDb db,
   String name, String owner) {
@@ -101,9 +85,6 @@ public abstract class CtasTargetTable implements FeTable {
   }
 
   @Override
-  public List<Column> getColumns() { return colsByPos_; }
-
-  @Override
   public List<Column> getColumnsInHiveOrder() {
     List<Column> columns = Lists.newArrayList(getNonClusteringColumns());
     columns = filterColumnsNotStoredInHms(columns);
@@ -113,34 +94,27 @@ public abstract class CtasTargetTable implements FeTable {
 
   @Override
   public List<Column> getClusteringColumns() {
-    return Collections.unmodifiableList(colsByPos_.subList(0, numClusteringCols_));
+    return schema_.getClusteringColumns();
   }
 
   @Override
   public List<Column> getNonClusteringColumns() {
-    return Collections.unmodifiableList(colsByPos_.subList(numClusteringCols_,
-        colsByPos_.size()));
+    return schema_.getNonClusteringColumns();
   }
 
   @Override
-  public List<String> getColumnNames() { return Column.toColumnNames(colsByPos_); }
-
-  @Override
   public int getNumClusteringCols() {
-    return numClusteringCols_;
+    return schema_.getNumClusteringCols();
   }
 
   @Override
   public boolean isClusteringColumn(Column c) {
-      return c.getPosition() < numClusteringCols_;
+    return schema_.isClusteringColumn(c);
   }
 
-  @Override // FeTable
-  public Column getColumn(String name) { return colsByName_.get(name.toLowerCase()); }
-
   @Override
-  public ArrayType getType() {
-    return type_;
+  public TableSchema getSchema() {
+    return schema_;
   }
 
   @Override

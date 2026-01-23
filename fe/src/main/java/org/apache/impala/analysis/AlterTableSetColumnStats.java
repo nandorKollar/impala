@@ -60,7 +60,7 @@ public class AlterTableSetColumnStats extends AlterTableStmt {
   public void analyze(Analyzer analyzer) throws AnalysisException {
     super.analyze(analyzer);
 
-    Column col = getTargetTable().getColumn(colName_);
+    Column col = getTargetTable().getSchema().getColumn(colName_);
     if (col == null) {
       throw new AnalysisException(
           String.format("Column '%s' does not exist in table: %s",

@@ -1361,7 +1361,7 @@ public class IcebergUtil {
         }
       }
     }
-    for (Column c : iceTable.getColumns()) {
+    for (Column c : iceTable.getSchema().getColumns()) {
       if (c.getType().isComplexType()) {
         throw new AnalysisException(String.format("Impala does not support writing " +
                 "tables with complex types. Table '%s' has column '%s' " +

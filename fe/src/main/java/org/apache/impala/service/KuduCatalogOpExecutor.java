@@ -522,7 +522,7 @@ public class KuduCatalogOpExecutor {
     List<String> rangePartitioningKuduColNames =
       Lists.newArrayListWithCapacity(rangePartitioningColNames.size());
     for (String colName : rangePartitioningColNames) {
-      rangePartitioningKuduColNames.add(((KuduColumn)tbl.getColumn(colName)).getKuduName());
+      rangePartitioningKuduColNames.add(((KuduColumn)tbl.getSchema().getColumn(colName)).getKuduName());
     }
     return getRangePartitionBounds(rangePartition, tbl.getKuduSchema(),
         rangePartitioningKuduColNames);
@@ -574,7 +574,7 @@ public class KuduCatalogOpExecutor {
   public static void dropColumn(KuduTable tbl, String colName,
       EventSequence catalogTimeline) throws ImpalaRuntimeException {
     Preconditions.checkState(!Strings.isNullOrEmpty(colName));
-    KuduColumn col = (KuduColumn) tbl.getColumn(colName);
+    KuduColumn col = (KuduColumn) tbl.getSchema().getColumn(colName);
     AlterTableOptions alterTableOptions = new AlterTableOptions();
     alterTableOptions.dropColumn(col.getKuduName());
     String errMsg = String.format("Error dropping column %s from " +
@@ -602,7 +602,7 @@ public class KuduCatalogOpExecutor {
       LOG.trace(
           String.format("Altering column '%s' to '%s'", colName, newCol.toString()));
     }
-    KuduColumn col = (KuduColumn) tbl.getColumn(colName);
+    KuduColumn col = (KuduColumn) tbl.getSchema().getColumn(colName);
     String kuduColName = col.getKuduName();
     AlterTableOptions alterTableOptions = new AlterTableOptions();
 

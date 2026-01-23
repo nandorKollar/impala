@@ -96,7 +96,7 @@ public class CatalogTest {
     FeTable tbl = db.getTable(tblName);
     assertEquals(tbl.getName(), tblName);
     assertEquals(tbl.getNumClusteringCols(), numClusteringCols);
-    List<Column> cols = tbl.getColumns();
+    List<Column> cols = tbl.getSchema().getColumns();
     assertEquals(colNames.length, colTypes.length);
     assertEquals(cols.size(), colNames.length);
     Iterator<Column> it = cols.iterator();
@@ -115,7 +115,7 @@ public class CatalogTest {
     checkTableCols(db, hiveTableName, 1, hiveColNames, colTypes);
     HBaseTable tbl = (HBaseTable) db.getTable(hiveTableName);
     assertEquals(tbl.getHBaseTableName(), hbaseTableName);
-    List<Column> cols = tbl.getColumns();
+    List<Column> cols = tbl.getSchema().getColumns();
     assertEquals(colFamilies.length, colTypes.length);
     assertEquals(colQualifiers.length, colTypes.length);
     Iterator<Column> it = cols.iterator();
@@ -555,64 +555,65 @@ public class CatalogTest {
     // make sure the stats for functional.alltypesagg look correct
     HdfsTable table = (HdfsTable) catalog_.getOrLoadTable("functional", "AllTypesAgg",
         "test", null);
+    TableSchema schema = table.getSchema();
 
-    Column idCol = table.getColumn("id");
+    Column idCol = schema.getColumn("id");
     assertEquals(idCol.getStats().getAvgSerializedSize(),
         PrimitiveType.INT.getSlotSize(), 0.0001);
     assertEquals(idCol.getStats().getMaxSize(), PrimitiveType.INT.getSlotSize());
     assertFalse(idCol.getStats().hasNulls());
 
-    Column boolCol = table.getColumn("bool_col");
+    Column boolCol = schema.getColumn("bool_col");
     assertEquals(boolCol.getStats().getAvgSerializedSize(),
         PrimitiveType.BOOLEAN.getSlotSize(), 0.0001);
     assertEquals(boolCol.getStats().getMaxSize(), PrimitiveType.BOOLEAN.getSlotSize());
     assertFalse(boolCol.getStats().hasNulls());
 
-    Column tinyintCol = table.getColumn("tinyint_col");
+    Column tinyintCol = schema.getColumn("tinyint_col");
     assertEquals(tinyintCol.getStats().getAvgSerializedSize(),
         PrimitiveType.TINYINT.getSlotSize(), 0.0001);
     assertEquals(tinyintCol.getStats().getMaxSize(), PrimitiveType.TINYINT.getSlotSize());
     assertTrue(tinyintCol.getStats().hasNulls());
 
-    Column smallintCol = table.getColumn("smallint_col");
+    Column smallintCol = schema.getColumn("smallint_col");
     assertEquals(smallintCol.getStats().getAvgSerializedSize(),
         PrimitiveType.SMALLINT.getSlotSize(), 0.0001);
     assertEquals(smallintCol.getStats().getMaxSize(),
         PrimitiveType.SMALLINT.getSlotSize());
     assertTrue(smallintCol.getStats().hasNulls());
 
-    Column intCol = table.getColumn("int_col");
+    Column intCol = schema.getColumn("int_col");
     assertEquals(intCol.getStats().getAvgSerializedSize(),
         PrimitiveType.INT.getSlotSize(), 0.0001);
     assertEquals(intCol.getStats().getMaxSize(), PrimitiveType.INT.getSlotSize());
     assertTrue(intCol.getStats().hasNulls());
 
-    Column bigintCol = table.getColumn("bigint_col");
+    Column bigintCol = schema.getColumn("bigint_col");
     assertEquals(bigintCol.getStats().getAvgSerializedSize(),
         PrimitiveType.BIGINT.getSlotSize(), 0.0001);
     assertEquals(bigintCol.getStats().getMaxSize(), PrimitiveType.BIGINT.getSlotSize());
     assertTrue(bigintCol.getStats().hasNulls());
 
-    Column floatCol = table.getColumn("float_col");
+    Column floatCol = schema.getColumn("float_col");
     assertEquals(floatCol.getStats().getAvgSerializedSize(),
         PrimitiveType.FLOAT.getSlotSize(), 0.0001);
     assertEquals(floatCol.getStats().getMaxSize(), PrimitiveType.FLOAT.getSlotSize());
     assertTrue(floatCol.getStats().hasNulls());
 
-    Column doubleCol = table.getColumn("double_col");
+    Column doubleCol = schema.getColumn("double_col");
     assertEquals(doubleCol.getStats().getAvgSerializedSize(),
         PrimitiveType.DOUBLE.getSlotSize(), 0.0001);
     assertEquals(doubleCol.getStats().getMaxSize(), PrimitiveType.DOUBLE.getSlotSize());
     assertTrue(doubleCol.getStats().hasNulls());
 
-    Column timestampCol = table.getColumn("timestamp_col");
+    Column timestampCol = schema.getColumn("timestamp_col");
     assertEquals(timestampCol.getStats().getAvgSerializedSize(),
         PrimitiveType.TIMESTAMP.getSlotSize(), 0.0001);
     assertEquals(timestampCol.getStats().getMaxSize(),
         PrimitiveType.TIMESTAMP.getSlotSize());
     assertFalse(timestampCol.getStats().hasNulls());
 
-    Column stringCol = table.getColumn("string_col");
+    Column stringCol = schema.getColumn("string_col");
     assertTrue(stringCol.getStats().getAvgSerializedSize() > 0);
     assertTrue(stringCol.getStats().getMaxSize() > 0);
     assertFalse(stringCol.getStats().hasNulls());
@@ -622,7 +623,7 @@ public class CatalogTest {
     HdfsTable dateTable = (HdfsTable) catalog_.getOrLoadTable("functional", "date_tbl",
         "test", null);
 
-    Column dateCol = dateTable.getColumn("date_col");
+    Column dateCol = schema.getColumn("date_col");
     assertEquals(dateCol.getStats().getAvgSerializedSize(),
         PrimitiveType.DATE.getSlotSize(), 0.0001);
     assertEquals(dateCol.getStats().getMaxSize(), PrimitiveType.DATE.getSlotSize());
@@ -631,7 +632,7 @@ public class CatalogTest {
     HdfsTable binaryTable = (HdfsTable) catalog_.getOrLoadTable("functional",
          "binary_tbl", "test", null);
 
-    Column binaryCol = binaryTable.getColumn("binary_col");
+    Column binaryCol = schema.getColumn("binary_col");
     assertTrue(binaryCol.getStats().getAvgSerializedSize() > 0);
     assertTrue(binaryCol.getStats().getMaxSize() > 0);
     assertTrue(binaryCol.getStats().hasNulls());
@@ -650,6 +651,7 @@ public class CatalogTest {
     //catalog_.refreshTable("functional", "alltypesagg", false);
     HdfsTable table = (HdfsTable) catalog_.getOrLoadTable("functional", "alltypesagg",
         "test", null);
+    TableSchema schema = table.getSchema();
 
     // Now attempt to update a column's stats with mismatched stats data and ensure
     // we get the expected results.
@@ -660,25 +662,25 @@ public class CatalogTest {
           client.getHiveClient(), "functional", "alltypesagg",
           Lists.newArrayList("string_col")).get(0).getStatsData();
 
-      assertTrue(!table.getColumn("int_col").updateStats(stringColStatsData));
-      assertStatsUnknown(table.getColumn("int_col"));
+      assertTrue(!schema.getColumn("int_col").updateStats(stringColStatsData));
+      assertStatsUnknown(schema.getColumn("int_col"));
 
-      assertTrue(!table.getColumn("double_col").updateStats(stringColStatsData));
-      assertStatsUnknown(table.getColumn("double_col"));
+      assertTrue(!schema.getColumn("double_col").updateStats(stringColStatsData));
+      assertStatsUnknown(schema.getColumn("double_col"));
 
-      assertTrue(!table.getColumn("bool_col").updateStats(stringColStatsData));
-      assertStatsUnknown(table.getColumn("bool_col"));
+      assertTrue(!schema.getColumn("bool_col").updateStats(stringColStatsData));
+      assertStatsUnknown(schema.getColumn("bool_col"));
 
       // Do the same thing, but apply bigint stats to a string column.
       ColumnStatisticsData bigIntCol = MetastoreShim.getTableColumnStatistics(
           client.getHiveClient(), "functional", "alltypes",
           Lists.newArrayList("bigint_col")).get(0).getStatsData();
-      assertTrue(!table.getColumn("string_col").updateStats(bigIntCol));
-      assertStatsUnknown(table.getColumn("string_col"));
+      assertTrue(!schema.getColumn("string_col").updateStats(bigIntCol));
+      assertStatsUnknown(schema.getColumn("string_col"));
 
       // Now try to apply a matching column stats data and ensure it succeeds.
-      assertTrue(table.getColumn("string_col").updateStats(stringColStatsData));
-      assertEquals(963, table.getColumn("string_col").getStats().getNumDistinctValues());
+      assertTrue(schema.getColumn("string_col").updateStats(stringColStatsData));
+      assertEquals(963, schema.getColumn("string_col").getStats().getNumDistinctValues());
     }
   }
 

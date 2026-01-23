@@ -2255,7 +2255,7 @@ public class CatalogOpExecutor {
     // Generate Hive column stats objects from the update stats params.
     for (Map.Entry<String, TColumnStats> entry: params.getColumn_stats().entrySet()) {
       String colName = entry.getKey();
-      Column tableCol = table.getColumn(entry.getKey());
+      Column tableCol = table.getSchema().getColumn(entry.getKey());
       // Ignore columns that were dropped in the meantime.
       if (tableCol == null) continue;
       // If we know the number of rows in the table, cap NDV of the column appropriately.
@@ -2889,7 +2889,8 @@ public class CatalogOpExecutor {
     Preconditions.checkState(table.isWriteLockedByCurrentThread());
     int numColsUpdated = 0;
     try (MetaStoreClient msClient = catalog_.getMetaStoreClient(catalogTimeline)) {
-      for (Column col: table.getColumns()) {
+      List<Column> columns = table.getSchema().getColumns();
+      for (Column col: columns) {
         // Skip columns that don't have stats.
         if (!col.getStats().hasStats()) continue;
 
@@ -4655,7 +4656,7 @@ public class CatalogOpExecutor {
         tableProperties.put(IcebergTable.ICEBERG_TABLE_IDENTIFIER, identifier.toString());
       }
       List<TColumn> columns = new ArrayList<>();
-      for (Column col: srcIceTable.getColumns()) columns.add(col.toThrift());
+      for (Column col: srcIceTable.getSchema().getColumns()) columns.add(col.toThrift());
       TIcebergPartitionSpec partitionSpec = srcIceTable.getDefaultPartitionSpec()
           .toThrift();
       createIcebergTable(tbl, wantMinimalResult, response, catalogTimeline,
@@ -4684,7 +4685,7 @@ public class CatalogOpExecutor {
     createTableParams.if_not_exists = params.if_not_exists;
     createTableParams.setComment(params.getComment());
     List<TColumn> columns = new ArrayList<>();
-    for (Column col : kuduTable.getColumns()) {
+    for (Column col : kuduTable.getSchema().getColumns()) {
       // Omit cloning auto-incrementing column of Kudu table since the column will be
       // created by Kudu engine.
       if (((KuduColumn) col).isAutoIncrementing()) continue;
@@ -4800,7 +4801,7 @@ public class CatalogOpExecutor {
     org.apache.hadoop.hive.metastore.api.Table msTbl = tbl.getMetaStoreTable().deepCopy();
     List<TColumn> colsToAdd = new ArrayList<>();
     for (TColumn column: columns) {
-      Column col = tbl.getColumn(column.getColumnName());
+      Column col = tbl.getSchema().getColumn(column.getColumnName());
       if (ifNotExists && col != null) continue;
       if (col != null) {
         throw new CatalogException(
@@ -8503,7 +8504,7 @@ public class CatalogOpExecutor {
       modification.addCatalogServiceIdentifiersToTable();
       if (tbl instanceof KuduTable) {
         TColumn new_col = new TColumn(columnName,
-            tbl.getColumn(columnName).getType().toThrift());
+            tbl.getSchema().getColumn(columnName).getType().toThrift());
         new_col.setComment(comment != null ? comment : "");
         KuduCatalogOpExecutor.alterColumn((KuduTable) tbl, columnName, new_col,
             catalogTimeline);

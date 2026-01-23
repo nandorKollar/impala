@@ -236,7 +236,7 @@ public abstract class BaseAuthorizationChecker implements AuthorizationChecker {
         // names in such cases since no column masking policies will be checked.
         FeTable table = db.getTable(authorizableTable.getTableName());
         if (table != null && !(table instanceof FeIncompleteTable)) {
-          authorizableTable.setColumns(table.getColumnNames());
+          authorizableTable.setColumns(table.getSchema().getColumnNames());
         }
       }
     }

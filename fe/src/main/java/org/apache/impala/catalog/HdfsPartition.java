@@ -402,7 +402,7 @@ public class HdfsPartition extends CatalogObjectImpl implements FeFsPartition {
   public String getValuesAsString() {
     StringBuilder partDescription = new StringBuilder();
     for (int i = 0; i < getTable().getNumClusteringCols(); ++i) {
-      String columnName = getTable().getColumns().get(i).getName();
+      String columnName = getTable().getSchema().getColumns().get(i).getName();
       String value = PartitionKeyValue.getPartitionKeyValueString(
           getPartitionValues().get(i),
           getTable().getNullPartitionKeyValue());

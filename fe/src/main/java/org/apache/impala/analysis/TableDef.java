@@ -666,7 +666,7 @@ class TableDef {
       for (String pkCol : fk.getPrimaryKeyColNames()) {
         // TODO: Check column types of parent table and child tables match. Currently HMS
         //  API fails if they don't, it's good to fail early during analysis here.
-        if (!parentTable.getColumnNames().contains(pkCol.toLowerCase())) {
+        if (!parentTable.getSchema().getColumnNames().contains(pkCol.toLowerCase())) {
           throw new AnalysisException("Parent column not found: " + pkCol.toLowerCase());
         }
         // Hive has a bug that prevents foreign keys from being added when pk column is

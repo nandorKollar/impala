@@ -3111,7 +3111,7 @@ public class AnalyzeExprsTest extends AnalyzerTest {
     List<String> allCountDistinctFns = new ArrayList<>();
 
     Table alltypesTbl = catalog_.getOrLoadTable("functional", "alltypes");
-    for (Column col: alltypesTbl.getColumns()) {
+    for (Column col: alltypesTbl.getSchema().getColumns()) {
       String colName = col.getName();
       // Test a single count(distinct) with some other aggs.
       String countDistinctFn = String.format("count(distinct %s)", colName);
@@ -3127,12 +3127,12 @@ public class AnalyzeExprsTest extends AnalyzerTest {
     SelectStmt alltypesStmt = (SelectStmt) AnalyzesOk(String.format(
         "select %s from functional.alltypes",
         Joiner.on(",").join(countDistinctFns)), createAnalysisCtx(queryOptions));
-    assertAllNdvAggExprs(alltypesStmt, alltypesTbl.getColumns().size());
+    assertAllNdvAggExprs(alltypesStmt, alltypesTbl.getSchema().getColumns().size());
 
     allCountDistinctFns.addAll(countDistinctFns);
     countDistinctFns.clear();
     Table decimalTbl = catalog_.getOrLoadTable("functional", "decimal_tbl");
-    for (Column col: decimalTbl.getColumns()) {
+    for (Column col: decimalTbl.getSchema().getColumns()) {
       String colName = col.getName();
       // Test a single count(distinct) with some other aggs.
       SelectStmt stmt = (SelectStmt) AnalyzesOk(String.format(
@@ -3147,12 +3147,12 @@ public class AnalyzeExprsTest extends AnalyzerTest {
     SelectStmt decimalTblStmt = (SelectStmt) AnalyzesOk(String.format(
         "select %s from functional.decimal_tbl",
         Joiner.on(",").join(countDistinctFns)), createAnalysisCtx(queryOptions));
-    assertAllNdvAggExprs(decimalTblStmt, decimalTbl.getColumns().size());
+    assertAllNdvAggExprs(decimalTblStmt, decimalTbl.getSchema().getColumns().size());
 
     allCountDistinctFns.addAll(countDistinctFns);
     countDistinctFns.clear();
     Table dateTbl = catalog_.getOrLoadTable("functional", "date_tbl");
-    for (Column col: dateTbl.getColumns()) {
+    for (Column col: dateTbl.getSchema().getColumns()) {
       String colName = col.getName();
       // Test a single count(distinct) with some other aggs.
       String countDistinctFn = String.format("count(distinct %s)", colName);
@@ -3166,7 +3166,7 @@ public class AnalyzeExprsTest extends AnalyzerTest {
     SelectStmt dateStmt = (SelectStmt) AnalyzesOk(String.format(
         "select %s from functional.date_tbl",
         Joiner.on(",").join(countDistinctFns)), createAnalysisCtx(queryOptions));
-    assertAllNdvAggExprs(dateStmt, dateTbl.getColumns().size());
+    assertAllNdvAggExprs(dateStmt, dateTbl.getSchema().getColumns().size());
 
     allCountDistinctFns.addAll(countDistinctFns);
 
@@ -3176,8 +3176,8 @@ public class AnalyzeExprsTest extends AnalyzerTest {
         "select %s from functional.alltypes cross join functional.decimal_tbl " +
         "cross join functional.date_tbl",
         Joiner.on(",").join(allCountDistinctFns)), createAnalysisCtx(queryOptions));
-    assertAllNdvAggExprs(comboStmt, alltypesTbl.getColumns().size() +
-        decimalTbl.getColumns().size() + dateTbl.getColumns().size());
+    assertAllNdvAggExprs(comboStmt, alltypesTbl.getSchema().getColumns().size() +
+        decimalTbl.getSchema().getColumns().size() + dateTbl.getSchema().getColumns().size());
 
     // The rewrite does not work for multiple count() arguments.
     SelectStmt noRewriteStmt = (SelectStmt) AnalyzesOk(

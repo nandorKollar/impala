@@ -108,7 +108,7 @@ public class PartitionSpec extends PartitionSpecBase {
         throw new AnalysisException("Duplicate partition key name: " + pk.getColName());
       }
 
-      Column c = table_.getColumn(pk.getColName());
+      Column c = table_.getSchema().getColumn(pk.getColName());
       if (c == null) {
         throw new AnalysisException(String.format(
             "Partition column '%s' not found in table: %s", pk.getColName(), tableName_));

@@ -85,9 +85,9 @@ public abstract class IcebergDeleteTable extends VirtualTable implements FeIcebe
         Set<Long> referencedPartitions) {
       TTableDescriptor desc =
           baseTable_.toThriftDescriptor(tableId, referencedPartitions);
-      desc.setColumnDescriptors(getTColumnDescriptors());
+      desc.setColumnDescriptors(getSchema().toTColumnDescriptors());
       if (desc.hdfsTable.isSetAvroSchema()) {
-        desc.hdfsTable.setAvroSchema(AvroSchemaConverter.convertColumns(getColumns(),
+        desc.hdfsTable.setAvroSchema(AvroSchemaConverter.convertColumns(getSchema().getColumns(),
             getFullName().replaceAll("-", "_")).toString());
       }
       return desc;
@@ -166,6 +166,11 @@ public abstract class IcebergDeleteTable extends VirtualTable implements FeIcebe
     @Override
     public int getDefaultPartitionSpecId() {
         return -1;
+    }
+
+    @Override
+    public TableSchema getSchema() {
+        return baseTable_.getSchema();
     }
 
     @Override

@@ -589,7 +589,7 @@ public class HdfsScanNode extends ScanNode {
     }
 
     Column firstComplexTypedCol = null;
-    for (Column col: desc_.getTable().getColumns()) {
+    for (Column col: desc_.getTable().getSchema().getColumns()) {
       if (col.getType().isComplexType()) {
         firstComplexTypedCol = col;
         break;

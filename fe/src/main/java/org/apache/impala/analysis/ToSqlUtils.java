@@ -507,8 +507,9 @@ public class ToSqlUtils {
     boolean isHbaseTable = table instanceof FeHBaseTable;
     boolean isFullAcid = AcidUtils.isFullAcidTable(
         table.getMetaStoreTable().getParameters());
-    for (int i = 0; i < table.getColumns().size(); i++) {
-      Column col = table.getColumns().get(i);
+    List<Column> columns = table.getSchema().getColumns();
+    for (int i = 0; i < columns.size(); i++) {
+      Column col = columns.get(i);
       if (!isHbaseTable && i < table.getNumClusteringCols()) {
         partitionColsSql.add(columnToSql(col));
       } else if (isFullAcid && i == table.getNumClusteringCols()) {
@@ -603,14 +604,14 @@ public class ToSqlUtils {
 
         partitionColsSql = new ArrayList<>();
         for (int i = 0; i < table.getNumClusteringCols(); i++) {
-          Column col = table.getColumns().get(i);
+          Column col = columns.get(i);
           partitionColsSql.add(columnToSql(col));
         }
 
         colsSql = new ArrayList<>();
 
-        for (int i = table.getNumClusteringCols(); i < table.getColumns().size(); i++) {
-          Column col = table.getColumns().get(i);
+        for (int i = table.getNumClusteringCols(); i < columns.size(); i++) {
+          Column col = columns.get(i);
           colsSql.add(columnToSql(col));
         }
       } catch (Exception e) {
@@ -696,8 +697,9 @@ public class ToSqlUtils {
     int numClusterCols = table.getNumClusteringCols();
     boolean hasColumnStats = false;
 
-    for (int i = numClusterCols; i < table.getColumns().size(); i++) {
-      Column c = table.getColumns().get(i);
+    List<Column> columns = table.getSchema().getColumns();
+    for (int i = numClusterCols; i < columns.size(); i++) {
+      Column c = columns.get(i);
       ColumnStats s = c.getStats();
       if (s == null) continue;
       boolean isFixed = c.getType() != null && c.getType().isFixedLengthType();
@@ -812,7 +814,7 @@ public class ToSqlUtils {
       List<LiteralExpr> partitionValues = partition.getPartitionValues();
       List<String> partitionCols = new ArrayList<>();
       for (int j = 0; j < numClusterCols; j++) {
-        Column col = table.getColumns().get(j);
+        Column col = table.getSchema().getColumns().get(j);
         LiteralExpr value = partitionValues.get(j);
         partitionCols.add(getIdentSql(col.getName()) + "=" + value.toSql());
       }
@@ -880,7 +882,7 @@ public class ToSqlUtils {
         List<LiteralExpr> partitionValues = partition.getPartitionValues();
         List<String> partitionCols = new ArrayList<>();
         for (int j = 0; j < numClusterCols; j++) {
-          Column col = table.getColumns().get(j);
+          Column col = table.getSchema().getColumns().get(j);
           LiteralExpr value = partitionValues.get(j);
           partitionCols.add(getIdentSql(col.getName()) + "=" + value.toSql());
         }

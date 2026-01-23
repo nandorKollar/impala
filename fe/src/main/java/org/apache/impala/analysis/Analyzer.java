@@ -1979,7 +1979,7 @@ public class Analyzer {
     Preconditions.checkNotNull(slotDesc.getPath());
     TupleDescriptor tupleDesc = slotDesc.getParent();
     if (tupleDesc.isMaterialized() && tupleDesc.getTable() != null) {
-      Column column = tupleDesc.getTable().getColumn(
+      Column column = tupleDesc.getTable().getSchema().getColumn(
           slotDesc.getPath().getRawPath().get(0));
       if (column != null) {
         registerPrivReq(builder -> builder

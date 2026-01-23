@@ -105,7 +105,7 @@ public class AlterTableAddDropRangePartitionStmt extends AlterTableStmt {
     }
     List<ColumnDef> rangeColDefs = Lists.newArrayListWithCapacity(colNames.size());
     for (String colName: colNames) {
-      Column col = kuduTable.getColumn(colName);
+      Column col = kuduTable.getSchema().getColumn(colName);
       ColumnDef colDef = new ColumnDef(col.getName(), new TypeDef(col.getType()));
       colDef.analyze(analyzer);
       rangeColDefs.add(colDef);
@@ -113,7 +113,7 @@ public class AlterTableAddDropRangePartitionStmt extends AlterTableStmt {
 
     List<ColumnDef> pkColumnDefs = new ArrayList<>();
     for (String colName: kuduTable.getPrimaryKeyColumnNames()) {
-      Column col = kuduTable.getColumn(colName);
+      Column col = kuduTable.getSchema().getColumn(colName);
       ColumnDef colDef = new ColumnDef(col.getName(), new TypeDef(col.getType()));
       colDef.analyze(analyzer);
       pkColumnDefs.add(colDef);

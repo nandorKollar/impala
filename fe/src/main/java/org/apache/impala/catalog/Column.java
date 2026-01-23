@@ -93,39 +93,6 @@ public class Column {
                   .add("position_", position_).toString();
   }
 
-  public static Column fromThrift(TColumn columnDesc) throws ImpalaRuntimeException {
-    String comment = columnDesc.isSetComment() ? columnDesc.getComment() : null;
-    Preconditions.checkState(columnDesc.isSetPosition());
-    int position = columnDesc.getPosition();
-    Type type = Type.fromThrift(columnDesc.getColumnType());
-    Column col;
-    if (columnDesc.isIs_iceberg_column()) {
-      Preconditions.checkState(columnDesc.isSetIceberg_field_id());
-      col = new IcebergColumn(columnDesc.getColumnName(), type, comment, position,
-          columnDesc.getIceberg_field_id(), columnDesc.getIceberg_field_map_key_id(),
-          columnDesc.getIceberg_field_map_value_id(), columnDesc.isIs_nullable());
-    } else if (columnDesc.isIs_paimon_column()) {
-      Preconditions.checkState(columnDesc.isSetIceberg_field_id());
-      col = new PaimonColumn(columnDesc.getColumnName(), type, comment, position,
-          columnDesc.getIceberg_field_id(), columnDesc.isIs_nullable());
-    } else if (columnDesc.isIs_hbase_column()) {
-      // HBase table column. The HBase column qualifier (column name) is not be set for
-      // the HBase row key, so it being set in the thrift struct is not a precondition.
-      Preconditions.checkState(columnDesc.isSetColumn_family());
-      Preconditions.checkState(columnDesc.isSetIs_binary());
-      col = new HBaseColumn(columnDesc.getColumnName(), columnDesc.getColumn_family(),
-          columnDesc.getColumn_qualifier(), columnDesc.isIs_binary(),
-          type, comment, position);
-    } else if (columnDesc.isIs_kudu_column()) {
-      col = KuduColumn.fromThrift(columnDesc, position);
-    } else {
-      // Hdfs table column.
-      col = new Column(columnDesc.getColumnName(), type, comment, position);
-    }
-    if (columnDesc.isSetCol_stats()) col.updateStats(columnDesc.getCol_stats());
-    return col;
-  }
-
   public TColumn toThrift() {
     TColumn colDesc = new TColumn(name_, type_.toThrift());
     if (comment_ != null) colDesc.setComment(comment_);

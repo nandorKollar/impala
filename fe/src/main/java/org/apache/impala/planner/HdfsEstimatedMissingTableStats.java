@@ -150,7 +150,7 @@ public class HdfsEstimatedMissingTableStats {
           computeEstimatedTableSize(partitionsWithCorruptOrMissingStats);
 
       double sumAvgRowSizes = 0.0;
-      for (Column col : tbl.getColumns()) {
+      for (Column col : tbl.getSchema().getColumns()) {
         Type currentType = col.getType();
         if (currentType instanceof ScalarType) {
           if (col.getStats().hasAvgSize()) {

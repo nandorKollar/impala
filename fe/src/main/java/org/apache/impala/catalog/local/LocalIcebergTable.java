@@ -28,13 +28,14 @@ import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.impala.analysis.IcebergPartitionSpec;
 import org.apache.impala.catalog.CatalogObject.ThriftObjectType;
-import org.apache.impala.catalog.Column;
 import org.apache.impala.catalog.FeCatalogUtils;
 import org.apache.impala.catalog.FeFsPartition;
 import org.apache.impala.catalog.FeFsTable;
 import org.apache.impala.catalog.FeIcebergTable;
+import org.apache.impala.catalog.IcebergColumn;
 import org.apache.impala.catalog.IcebergContentFileStore;
 import org.apache.impala.catalog.TableLoadingException;
+import org.apache.impala.catalog.TableSchema;
 import org.apache.impala.catalog.local.MetaProvider.TableMetaRef;
 import org.apache.impala.common.ImpalaRuntimeException;
 import org.apache.impala.thrift.TCompressionCodec;
@@ -52,13 +53,10 @@ import org.apache.impala.util.IcebergUtil;
 import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.Immutable;
 
-import org.apache.log4j.Logger;
-
 /**
  * Iceberg table for LocalCatalog
  */
 public class LocalIcebergTable extends LocalTable implements FeIcebergTable {
-  private static final Logger LOG = Logger.getLogger(LocalIcebergTable.class);
   private TableParams tableParams_;
   private TIcebergFileFormat icebergFileFormat_;
   private TCompressionCodec icebergParquetCompressionCodec_;
@@ -94,14 +92,14 @@ public class LocalIcebergTable extends LocalTable implements FeIcebergTable {
       warmupMetaProviderCache(db, msTable, ref, fsTable);
       org.apache.iceberg.Table icebergApiTable = db.getCatalog().getMetaProvider()
           .loadIcebergApiTable(ref, tableParams, msTable);
-      List<Column> iceColumns = IcebergSchemaConverter.convertToImpalaSchema(
+      List<IcebergColumn> iceColumns = IcebergSchemaConverter.convertToImpalaSchema(
           icebergApiTable.schema());
       validateColumns(iceColumns, msTable.getSd().getCols());
-      ColumnMap colMap = new ColumnMap(iceColumns,
+      TableSchema schema = new TableSchema(iceColumns,
           /*numClusteringCols=*/ 0,
           db.getName() + "." + msTable.getTableName(),
           /*isFullAcidSchema=*/false);
-      return new LocalIcebergTable(db, msTable, ref, fsTable, colMap, tableInfo,
+      return new LocalIcebergTable(db, msTable, ref, fsTable, schema, tableInfo,
           tableParams, icebergApiTable);
     } catch (InconsistentMetadataFetchException e) {
       // Just rethrow this so the query can be retried by the Frontend.
@@ -137,10 +135,10 @@ public class LocalIcebergTable extends LocalTable implements FeIcebergTable {
   }
 
   private LocalIcebergTable(LocalDb db, Table msTable, MetaProvider.TableMetaRef ref,
-      LocalFsTable fsTable, ColumnMap cmap, TPartialTableInfo tableInfo,
-      TableParams tableParams, org.apache.iceberg.Table icebergApiTable)
+    LocalFsTable fsTable, TableSchema schema, TPartialTableInfo tableInfo,
+    TableParams tableParams, org.apache.iceberg.Table icebergApiTable)
       throws ImpalaRuntimeException {
-    super(db, msTable, ref, cmap);
+    super(db, msTable, ref, schema);
 
     Preconditions.checkNotNull(tableInfo);
     localFsTable_ = fsTable;
@@ -164,7 +162,7 @@ public class LocalIcebergTable extends LocalTable implements FeIcebergTable {
     addVirtualColumns(ref.getVirtualColumns());
   }
 
-  static void validateColumns(List<Column> impalaCols, List<FieldSchema> hmsCols) {
+  static void validateColumns(List<IcebergColumn> impalaCols, List<FieldSchema> hmsCols) {
     Preconditions.checkState(impalaCols.size() == hmsCols.size());
     for (int i = 0; i < impalaCols.size(); ++i) {
       Preconditions.checkState(
@@ -251,7 +249,7 @@ public class LocalIcebergTable extends LocalTable implements FeIcebergTable {
   public TTableDescriptor toThriftDescriptor(int tableId,
       Set<Long> referencedPartitions) {
     TTableDescriptor desc = new TTableDescriptor(tableId, TTableType.ICEBERG_TABLE,
-        getTColumnDescriptors(),
+        getSchema().toTColumnDescriptors(),
         getNumClusteringCols(),
         name_, db_.getName());
     desc.setIcebergTable(Utils.getTIcebergTable(this, ThriftObjectType.DESCRIPTOR_ONLY));
@@ -276,7 +274,7 @@ public class LocalIcebergTable extends LocalTable implements FeIcebergTable {
         localFsTable_.createPrototypePartition(),
         ThriftObjectType.DESCRIPTOR_ONLY);
     THdfsTable hdfsTable = new THdfsTable(localFsTable_.getHdfsBaseDir(),
-        getColumnNames(), localFsTable_.getNullPartitionKeyValue(),
+        getSchema().getColumnNames(), localFsTable_.getNullPartitionKeyValue(),
         FeFsTable.DEFAULT_NULL_COLUMN_VALUE, idToPartition, tPrototypePartition);
     hdfsTable.setAvroSchema(localFsTable_.getAvroSchema());
     Utils.updateIcebergPartitionFileFormat(this, hdfsTable);

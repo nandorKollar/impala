@@ -240,7 +240,7 @@ public class Path {
       currentType = rootDesc_.getType();
     } else {
       // Directly start from the item type because only implicit paths are allowed.
-      currentType = rootTable_.getType().getItemType();
+      currentType = rootTable_.getSchema().getType().getItemType();
     }
 
     // Map all remaining raw-path elements to field types and positions.
@@ -290,7 +290,7 @@ public class Path {
     if (isResolved_) return true;
     if (rootTable_ == null) return false;
     if (rootDesc_ != null) {
-      if (rootDesc_.getType() != rootTable_.getType().getItemType()) {
+      if (rootDesc_.getType() != rootTable_.getSchema().getType().getItemType()) {
         // 'rootDesc_' describes a collection tuple. Currently we only allow virtual
         // columns at the table-level.
         return false;
@@ -406,7 +406,7 @@ public class Path {
     Preconditions.checkState(isResolved_);
     if (!matchedTypes_.isEmpty()) return matchedTypes_.get(matchedTypes_.size() - 1);
     if (rootDesc_ != null) return rootDesc_.getType();
-    if (rootTable_ != null) return rootTable_.getType();
+    if (rootTable_ != null) return rootTable_.getSchema().getType();
     return null;
   }
 
@@ -426,7 +426,7 @@ public class Path {
   public Column destColumn() {
     Preconditions.checkState(isResolved_);
     if (rootTable_ == null || rawPath_.size() != 1) return null;
-    return rootTable_.getColumn(rawPath_.get(rawPath_.size() - 1));
+    return rootTable_.getSchema().getColumn(rawPath_.get(rawPath_.size() - 1));
   }
 
   /**
@@ -523,7 +523,7 @@ public class Path {
       Preconditions.checkState(isRootedAtTable());
       result.add(rootTable_.getTableName().getDb());
       result.add(rootTable_.getTableName().getTbl());
-      currentType = rootTable_.getType().getItemType();
+      currentType = rootTable_.getSchema().getType().getItemType();
     }
     // Compute the explicit path from the matched positions. Note that rawPath_ is
     // not sufficient because it could contain implicit matches.

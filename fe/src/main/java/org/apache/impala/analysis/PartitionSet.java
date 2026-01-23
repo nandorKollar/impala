@@ -176,7 +176,7 @@ public class PartitionSet extends PartitionSpecBase {
     for (FeFsPartition hdfsPartition : partitions_) {
       List<TPartitionKeyValue> thriftPartitionSpec = new ArrayList<>();
       for (int i = 0; i < table_.getNumClusteringCols(); ++i) {
-        String key = table_.getColumns().get(i).getName();
+        String key = table_.getSchema().getColumns().get(i).getName();
         String value = PartitionKeyValue.getPartitionKeyValueString(
             hdfsPartition.getPartitionValue(i), nullPartitionKeyValue_);
         thriftPartitionSpec.add(new TPartitionKeyValue(key, value));
