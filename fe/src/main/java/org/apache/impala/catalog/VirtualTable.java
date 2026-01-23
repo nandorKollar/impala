@@ -107,9 +107,6 @@ public abstract class VirtualTable implements FeTable {
     return c.getPosition() < getSchema().getNumClusteringCols();
   }
 
-  @Override // FeTable
-  public Column getColumn(String name) { return getSchema().getColumn(name.toLowerCase()); }
-
   @Override
   public long getWriteId() { return 0; }
 

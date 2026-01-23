@@ -298,11 +298,6 @@ abstract class LocalTable implements FeTable {
   }
 
   @Override
-  public Column getColumn(String name) {
-    return schema_.getColumn(name);
-  }
-  
-  @Override
   public FeDb getDb() {
     return db_;
   }

@@ -785,7 +785,7 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
       List<ColumnStatisticsObj> statsList =
           Lists.newArrayListWithCapacity(colList.size());
       for (String colName: colList) {
-        Column col = getColumn(colName);
+        Column col = schema.getColumn(colName);
         if (col == null) continue;
 
         // Don't return stats for HDFS partitioning columns, since these are computed
@@ -872,9 +872,6 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
   public List<Column> getNonClusteringColumns() {
     return getSchema().getNonClusteringColumns();
   }
-
-  @Override // FeTable
-  public Column getColumn(String name) { return getSchema().getColumn(name.toLowerCase()); }
 
   @Override // FeTable
   public org.apache.hadoop.hive.metastore.api.Table getMetaStoreTable() {

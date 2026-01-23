@@ -133,7 +133,7 @@ public abstract class FeCatalogUtils {
   public static void injectColumnStats(
       List<ColumnStatisticsObj> colStats, FeTable table, SideloadTableStats testStats) {
     for (ColumnStatisticsObj stats: colStats) {
-      Column col = table.getColumn(stats.getColName());
+      Column col = table.getSchema().getColumn(stats.getColName());
       Preconditions.checkNotNull(col, "Unable to find column %s in table %s",
           stats.getColName(), table.getFullName());
       if (!ColumnStats.isSupportedColType(col.getType())) {

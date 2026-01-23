@@ -433,7 +433,7 @@ public class ComputeStatsStmt extends StatementBase implements SingleTableStmt {
     if (columnWhitelist_ != null) {
       validatedColumnWhitelist_ = new HashSet<>();
       for (String colName : columnWhitelist_) {
-        Column col = table_.getColumn(colName);
+        Column col = table_.getSchema().getColumn(colName);
         if (col == null) {
           throw new AnalysisException(colName + " not found in table: " +
               table_.getName());

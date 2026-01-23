@@ -66,7 +66,7 @@ public class CommentOnColumnStmt extends CommentOnStmt {
       feTable = tableRef.getTable();
       tableRefType = "table";
     }
-    Column column = feTable.getColumn(columnName_);
+    Column column = feTable.getSchema().getColumn(columnName_);
     if (column == null) {
       throw new AnalysisException(String.format(
           "Column '%s' does not exist in %s: %s", columnName_, tableRefType, tableName_));

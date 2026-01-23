@@ -288,7 +288,7 @@ public class PrivilegeSpec extends StmtNode {
           "source tables are not supported.");
     }
     for (String columnName: columnNames_) {
-      if (table.getColumn(columnName) == null) {
+      if (table.getSchema().getColumn(columnName) == null) {
         // The error message should not reveal the existence or absence of a column.
         throw new AnalysisException(String.format("Error setting/showing column-level " +
             "privileges for table '%s'. Verify that both table and columns exist " +

@@ -93,7 +93,7 @@ public class ExprCardinalityTest {
 
   private void verifyTableCol(Table table, String colName,
       long expectedNdv, long expectedNullCount) {
-    Column col = table.getColumn(colName);
+    Column col = table.getSchema().getColumn(colName);
     assertNotNull(col);
     ColumnStats stats = col.getStats();
     assertNotNull(stats);

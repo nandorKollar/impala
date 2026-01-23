@@ -168,14 +168,6 @@ public interface FeTable {
   default boolean isComputedPartitionColumn(Column c) { return false; }
 
   /**
-   * Case-insensitive lookup.
-   *
-   * @return null if the column with 'name' is not found.
-   * TODO: replace with corresponding method on TableSchema
-   */
-  Column getColumn(String name);
-
-  /**
    * @return the database that that contains this table
    */
   FeDb getDb();

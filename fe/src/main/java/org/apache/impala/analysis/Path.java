@@ -426,7 +426,7 @@ public class Path {
   public Column destColumn() {
     Preconditions.checkState(isResolved_);
     if (rootTable_ == null || rawPath_.size() != 1) return null;
-    return rootTable_.getColumn(rawPath_.get(rawPath_.size() - 1));
+    return rootTable_.getSchema().getColumn(rawPath_.get(rawPath_.size() - 1));
   }
 
   /**

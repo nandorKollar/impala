@@ -360,7 +360,7 @@ public class InsertStmt extends DmlStatementBase {
     // partition clause to detect duplicates.
     Set<String> mentionedColumnNames = new HashSet<>();
     for (String columnName: analysisColumnPermutation) {
-      Column column = table_.getColumn(columnName);
+      Column column = table_.getSchema().getColumn(columnName);
       if (column == null) {
         throw new AnalysisException(
             "Unknown column '" + columnName + "' in column permutation");
@@ -376,7 +376,7 @@ public class InsertStmt extends DmlStatementBase {
     int numStaticPartitionExprs = 0;
     if (partitionKeyValues_ != null && !isIcebergTarget()) {
       for (PartitionKeyValue pkv: partitionKeyValues_) {
-        Column column = table_.getColumn(pkv.getColName());
+        Column column = table_.getSchema().getColumn(pkv.getColName());
         if (column == null) {
           throw new AnalysisException("Unknown column '" + pkv.getColName() +
                                       "' in partition clause");
@@ -889,7 +889,7 @@ public class InsertStmt extends DmlStatementBase {
       for (PartitionKeyValue pkv: partitionKeyValues_) {
         if (pkv.isStatic()) {
           // tableColumns is guaranteed to exist after the earlier analysis checks
-          Column tableColumn = table_.getColumn(pkv.getColName());
+          Column tableColumn = table_.getSchema().getColumn(pkv.getColName());
           Expr compatibleExpr = checkTypeCompatibility(targetTableName_.toString(),
               tableColumn, pkv.getLiteralValue(), analyzer, null);
           tmpPartitionKeyExprs.add(compatibleExpr);

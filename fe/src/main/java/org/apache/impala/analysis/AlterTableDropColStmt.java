@@ -78,7 +78,7 @@ public class AlterTableDropColStmt extends AlterTableStmt {
           colName_, tableName));
     }
 
-    if (t.getColumn(colName_) == null) {
+    if (t.getSchema().getColumn(colName_) == null) {
       throw new AnalysisException(String.format(
           "Column '%s' does not exist in table: %s", colName_, tableName));
     }

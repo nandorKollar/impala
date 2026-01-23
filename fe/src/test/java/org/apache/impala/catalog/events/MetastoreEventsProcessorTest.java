@@ -4664,7 +4664,7 @@ public class MetastoreEventsProcessorTest {
     req.setAlter_table_params(alterTableParams);
     catalogOpExecutor_.execDdlRequest(req);
     Table tbl = catalog_.getTable(dbName, tblName);
-    assertNotNull(tbl.getColumn(colName));
+    assertNotNull(tbl.getSchema().getColumn(colName));
   }
 
   /**
@@ -4684,7 +4684,7 @@ public class MetastoreEventsProcessorTest {
     req.setAlter_table_params(alterTableParams);
     catalogOpExecutor_.execDdlRequest(req);
     Table tbl = catalog_.getTable(dbName, tblName);
-    assertNull(tbl.getColumn(colName));
+    assertNull(tbl.getSchema().getColumn(colName));
   }
 
   private void alterTableReplaceColFromImpala(
@@ -4701,7 +4701,7 @@ public class MetastoreEventsProcessorTest {
     req.setAlter_table_params(alterTableParams);
     catalogOpExecutor_.execDdlRequest(req);
     Table tbl = catalog_.getTable(dbName, tblName);
-    assertNotNull(tbl.getColumn(newCols.get(0).getColumnName()));
+    assertNotNull(tbl.getSchema().getColumn(newCols.get(0).getColumnName()));
   }
 
   /**

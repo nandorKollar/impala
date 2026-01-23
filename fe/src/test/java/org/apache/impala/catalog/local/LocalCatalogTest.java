@@ -246,7 +246,7 @@ public class LocalCatalogTest {
     FeFsTable t = (FeFsTable) catalog_.getTable("functional",  "alltypesagg");
     // This table has one partition with a NULL value for the 'day'
     // clustering column.
-    int dayCol = t.getColumn("day").getPosition();
+    int dayCol = t.getSchema().getColumn("day").getPosition();
     Set<Long> ids = t.getNullPartitionIds(dayCol);
     assertEquals(1,  ids.size());
     FeFsPartition partition = t.loadPartition(Iterables.getOnlyElement(ids));
@@ -329,12 +329,12 @@ public class LocalCatalogTest {
     FeFsTable t = (FeFsTable) catalog_.getTable("functional",  "alltypesagg");
     // Verify expected stats for a partitioning column.
     // 'days' has 10 non-NULL plus one NULL partition
-    ColumnStats stats = t.getColumn("day").getStats();
+    ColumnStats stats = t.getSchema().getColumn("day").getStats();
     assertEquals(11, stats.getNumDistinctValues());
     assertEquals(1, stats.getNumNulls());
 
     // Verify expected stats for timestamp.
-    stats = t.getColumn("timestamp_col").getStats();
+    stats = t.getSchema().getColumn("timestamp_col").getStats();
     assertEquals(10210, stats.getNumDistinctValues());
     assertEquals(0, stats.getNumNulls());
   }
@@ -344,12 +344,12 @@ public class LocalCatalogTest {
     FeFsTable t = (FeFsTable) catalog_.getTable("functional",  "date_tbl");
     // Verify expected stats for a partitioning column.
     // 'date_part' has 4 non-NULL partitions
-    ColumnStats stats = t.getColumn("date_part").getStats();
+    ColumnStats stats = t.getSchema().getColumn("date_part").getStats();
     assertEquals(4, stats.getNumDistinctValues());
     assertEquals(0, stats.getNumNulls());
 
     // Verify expected stats for date_col.
-    stats = t.getColumn("date_col").getStats();
+    stats = t.getSchema().getColumn("date_col").getStats();
     assertEquals(16, stats.getNumDistinctValues());
     assertEquals(2, stats.getNumNulls());
   }
@@ -357,7 +357,7 @@ public class LocalCatalogTest {
   @Test
   public void testBinaryColumnStats() throws Exception {
     FeFsTable t = (FeFsTable) catalog_.getTable("functional",  "binary_tbl");
-    ColumnStats stats = t.getColumn("binary_col").getStats();
+    ColumnStats stats = t.getSchema().getColumn("binary_col").getStats();
     assertEquals(26, stats.getMaxSize());
     assertEquals(8.714285850524902, stats.getAvgSize(), 0.0001);
     assertEquals(-1, stats.getNumDistinctValues());
@@ -496,7 +496,7 @@ public class LocalCatalogTest {
     FeFsTable t = (FeFsTable)catalog_.getTable("functional_avro_snap", "no_avro_schema");
     assertNotNull(t.toThriftDescriptor(0, null).hdfsTable.avroSchema);
     // The tinyint column should get promoted to INT to be Avro-compatible.
-    assertEquals(t.getColumn("tinyint_col").getType(), Type.INT);
+    assertEquals(t.getSchema().getColumn("tinyint_col").getType(), Type.INT);
     assertTrue(t.usesAvroSchemaOverride());
   }
 

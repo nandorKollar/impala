@@ -2623,7 +2623,7 @@ public class HdfsTable extends Table implements FeFsTable {
     if (partName.length != 2 || !partName[0].equals(partitionKey)) return null;
 
     // Check Type compatibility for Partition value.
-    Column column = getColumn(partName[0]);
+    Column column = getSchema().getColumn(partName[0]);
     Preconditions.checkNotNull(column);
     Type type = column.getType();
     // URL decode the partition value since it may contain encoded URL.

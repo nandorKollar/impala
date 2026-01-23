@@ -113,7 +113,7 @@ public class AlterTableAlterColStmt extends AlterTableStmt {
     }
     String tableName = getDb() + "." + getTbl();
 
-    Column column = t.getColumn(colName_);
+    Column column = t.getSchema().getColumn(colName_);
     // Verify the column being modified exists in the table
     if (column == null) {
       throw new AnalysisException(String.format(
@@ -135,7 +135,7 @@ public class AlterTableAlterColStmt extends AlterTableStmt {
     // Verify that if the column name is being changed, the new name doesn't conflict
     // with an existing column.
     if (!colName_.toLowerCase().equals(newColDef_.getColName().toLowerCase()) &&
-        t.getColumn(newColDef_.getColName()) != null) {
+        t.getSchema().getColumn(newColDef_.getColName()) != null) {
       throw new AnalysisException("Column already exists: " + newColDef_.getColName());
     }
     if (newColDef_.hasKuduOptions()) {
@@ -160,7 +160,7 @@ public class AlterTableAlterColStmt extends AlterTableStmt {
       }
     }
     if (t instanceof FeKuduTable) {
-      KuduColumn col = (KuduColumn) t.getColumn(colName_);
+      KuduColumn col = (KuduColumn) t.getSchema().getColumn(colName_);
       boolean isSystemGeneratedColumn = col.isAutoIncrementing();
       if (!col.getType().equals(newColDef_.getType())) {
         throw new AnalysisException(String.format("Cannot change the type of a Kudu " +
@@ -186,7 +186,7 @@ public class AlterTableAlterColStmt extends AlterTableStmt {
     if (t instanceof FeIcebergTable) {
       // We cannot update column from primitive type to complex type or
       // from complex type to primitive type
-      if (t.getColumn(colName_).getType().isComplexType() ||
+      if (t.getSchema().getColumn(colName_).getType().isComplexType() ||
           newColDef_.getType().isComplexType()) {
         throw new AnalysisException(String.format("ALTER TABLE CHANGE COLUMN " +
             "is not supported for complex types in Iceberg tables."));

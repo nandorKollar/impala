@@ -125,11 +125,6 @@ public class IcebergTimeTravelTable
     return Collections.emptyList();
   }
 
-  @Override
-  public Column getColumn(String name) {
-    return schema_.getColumn(name);
-  }
-
   @Override // FeTable
   public List<Column> getNonClusteringColumns() {
     return schema_.getNonClusteringColumns();
@@ -503,11 +498,6 @@ class ForwardingFeIcebergTable implements FeIcebergTable {
   @Override
   public boolean isClusteringColumn(Column c) {
     return base.isClusteringColumn(c);
-  }
-
-  @Override
-  public Column getColumn(String name) {
-    return base.getColumn(name);
   }
 
   @Override

@@ -112,9 +112,6 @@ public abstract class CtasTargetTable implements FeTable {
     return schema_.isClusteringColumn(c);
   }
 
-  @Override // FeTable
-  public Column getColumn(String name) { return schema_.getColumn(name); }
-
   @Override
   public TableSchema getSchema() {
     return schema_;

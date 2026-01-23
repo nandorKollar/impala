@@ -665,7 +665,7 @@ public class HBaseScanNode extends ScanNode {
 
     List<HBaseColumn> colsToFetchFromHBase = new ArrayList<>();
     for (SlotDescriptor slot : desc_.getSlots()) {
-      HBaseColumn col = (HBaseColumn) tbl.getColumn(slot.getLabel());
+      HBaseColumn col = (HBaseColumn) tbl.getSchema().getColumn(slot.getLabel());
       // Will add key column separately, since its always fetched.
       if (col.getColumnFamily().equals(FeHBaseTable.Util.ROW_KEY_COLUMN_FAMILY)) continue;
       colsToFetchFromHBase.add(col);
