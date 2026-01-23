@@ -111,9 +111,6 @@ public abstract class VirtualTable implements FeTable {
   public Column getColumn(String name) { return getSchema().getColumn(name.toLowerCase()); }
 
   @Override
-  public ArrayType getType() { return getSchema().getType(); }
-
-  @Override
   public long getWriteId() { return 0; }
 
   @Override

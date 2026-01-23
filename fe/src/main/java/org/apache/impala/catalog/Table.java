@@ -915,9 +915,6 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
   @Override // FeTable
   public TTableStats getTTableStats() { return tableStats_; }
 
-  @Override // FeTable
-  public ArrayType getType() { return getSchema().getType(); }
-
   /**
    * If the table is cached, it returns a <cache pool name, replication factor> pair
    * and adds the table cached directive ID to 'cacheDirIds'. Otherwise, it

@@ -176,12 +176,6 @@ public interface FeTable {
   Column getColumn(String name);
 
   /**
-   * @return the type of this table (array of struct) that mirrors the columns.
-   * TODO: replace with corresponding method on TableSchema
-   */
-  ArrayType getType();
-
-  /**
    * @return the database that that contains this table
    */
   FeDb getDb();

@@ -511,11 +511,6 @@ class ForwardingFeIcebergTable implements FeIcebergTable {
   }
 
   @Override
-  public ArrayType getType() {
-    return base.getType();
-  }
-
-  @Override
   public FeDb getDb() {
     return base.getDb();
   }

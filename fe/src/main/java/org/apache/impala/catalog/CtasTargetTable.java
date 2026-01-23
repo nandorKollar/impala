@@ -116,11 +116,6 @@ public abstract class CtasTargetTable implements FeTable {
   public Column getColumn(String name) { return schema_.getColumn(name); }
 
   @Override
-  public ArrayType getType() {
-    return schema_.getType();
-  }
-
-  @Override
   public TableSchema getSchema() {
     return schema_;
   }

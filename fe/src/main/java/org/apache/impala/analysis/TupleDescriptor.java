@@ -203,7 +203,7 @@ public class TupleDescriptor {
     if (p.destTable() != null) {
       // Do not use Path.getTypeAsStruct() to only allow implicit path resolutions,
       // because this tuple desc belongs to a base table ref.
-      type_ = (StructType) p.destTable().getType().getItemType();
+      type_ = (StructType) p.destTable().getSchema().getType().getItemType();
     } else {
       // Also allow explicit path resolutions.
       type_ = Path.getTypeAsStruct(p.destType());
