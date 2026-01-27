@@ -19,8 +19,8 @@ package org.apache.impala.analysis;
 
 import java.util.List;
 
+import org.apache.impala.catalog.CacheableTable;
 import org.apache.impala.catalog.FeFsPartition;
-import org.apache.impala.catalog.FeFsTable;
 import org.apache.impala.catalog.FeTable;
 import org.apache.impala.common.AnalysisException;
 import org.apache.impala.thrift.TAlterTableParams;
@@ -67,15 +67,15 @@ public class AlterTableSetCachedStmt extends AlterTableSetStmt {
 
     FeTable table = getTargetTable();
     Preconditions.checkNotNull(table);
-    if (!(table instanceof FeFsTable)) {
-      throw new AnalysisException("ALTER TABLE SET [CACHED|UNCACHED] must target an " +
-          "HDFS table: " + table.getFullName());
+    if (!(table instanceof CacheableTable)) {
+      throw new AnalysisException("ALTER TABLE SET [CACHED|UNCACHED] must target a " +
+          "cacheable table: " + table.getFullName());
     }
 
     if (cacheOp_.shouldCache()) {
       boolean isCacheable = true;
       PartitionSet partitionSet = getPartitionSet();
-      FeFsTable hdfsTable = (FeFsTable)table;
+      CacheableTable hdfsTable = (CacheableTable)table;
       StringBuilder nameSb = new StringBuilder();
       if (partitionSet != null) {
         List<? extends FeFsPartition> parts = partitionSet.getPartitions();
@@ -90,7 +90,7 @@ public class AlterTableSetCachedStmt extends AlterTableSetStmt {
         nameSb.append("Table ").append(table.getFullName());
       }
       if (!isCacheable) {
-        throw new AnalysisException(nameSb.toString() + " cannot be cached. Please " +
+        throw new AnalysisException(nameSb + " cannot be cached. Please " +
             "check if the table or partitions are on a filesystem which supports " +
             "caching.");
       }

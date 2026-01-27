@@ -336,11 +336,6 @@ class ForwardingFeIcebergTable implements FeIcebergTable {
   }
 
   @Override
-  public boolean isCacheable() {
-    return base.isCacheable();
-  }
-
-  @Override
   public boolean isLocationCacheable() {
     return base.isLocationCacheable();
   }

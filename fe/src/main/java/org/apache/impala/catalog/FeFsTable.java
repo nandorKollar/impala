@@ -156,12 +156,6 @@ public interface FeFsTable extends FeTable {
   }
 
   /**
-   * @return true if the table and all its partitions reside at locations which
-   * support caching (e.g. HDFS).
-   */
-  public boolean isCacheable();
-
-  /**
    * @return true if the table resides at a location which supports caching
    * (e.g. HDFS).
    */

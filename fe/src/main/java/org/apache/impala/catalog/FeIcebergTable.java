@@ -203,11 +203,6 @@ public interface FeIcebergTable extends FeFsTable {
   }
 
   @Override
-  default boolean isCacheable() {
-    return getFeFsTable().isCacheable();
-  }
-
-  @Override
   default boolean isLocationCacheable() {
     return getFeFsTable().isLocationCacheable();
   }

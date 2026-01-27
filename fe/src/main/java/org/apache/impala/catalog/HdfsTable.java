@@ -148,7 +148,7 @@ import static org.apache.impala.service.CatalogOpExecutor.FETCHED_LATEST_HMS_EVE
  * the table states (partitionIds) of each coordinators. Generating incremental table
  * updates requires a base status. This will be improved in IMPALA-9936 and IMPALA-9937.
  */
-public class HdfsTable extends Table implements FeFsTable {
+public class HdfsTable extends Table implements FeFsTable, CacheableTable {
   // Name of default partition for unpartitioned tables
   public static final String DEFAULT_PARTITION_NAME = "";
 

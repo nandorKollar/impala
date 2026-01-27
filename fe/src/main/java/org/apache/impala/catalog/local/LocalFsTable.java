@@ -35,6 +35,7 @@ import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.impala.analysis.Expr;
 import org.apache.impala.analysis.LiteralExpr;
+import org.apache.impala.catalog.CacheableTable;
 import org.apache.impala.catalog.CatalogException;
 import org.apache.impala.catalog.CatalogObject.ThriftObjectType;
 import org.apache.impala.catalog.Column;
@@ -71,7 +72,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
-public class LocalFsTable extends LocalTable implements FeFsTable {
+public class LocalFsTable extends LocalTable implements FeFsTable, CacheableTable {
   /**
    * Map from partition ID to partition spec.
    *
