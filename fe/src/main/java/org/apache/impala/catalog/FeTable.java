@@ -17,7 +17,6 @@
 package org.apache.impala.catalog;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -27,7 +26,6 @@ import org.apache.hadoop.hive.common.ValidWriteIdList;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.impala.analysis.TableName;
 import org.apache.impala.thrift.TCatalogObjectType;
-import org.apache.impala.thrift.TColumnDescriptor;
 import org.apache.impala.thrift.TImpalaTableType;
 import org.apache.impala.thrift.TTableDescriptor;
 import org.apache.impala.thrift.TTableStats;
@@ -105,31 +103,21 @@ public interface FeTable {
   String getTableComment();
 
   /**
-   * @return the columns in this table
-   */
-  List<Column> getColumns();
-
-  /**
-   * @return the virtual columns of this table
-   */
-  default List<VirtualColumn> getVirtualColumns() {
-    return Collections.emptyList();
-  }
-
-  /**
    * @return an unmodifiable list of all columns, but with partition columns at the end of
    * the list rather than the beginning. This is equivalent to the order in
    * which Hive enumerates columns. Removes columns that are not in the HMS schema.
+   * TODO: probably this is schema related method
    */
   List<Column> getColumnsInHiveOrder();
-
-  /**
-   * @return a list of the column names ordered by position.
-   */
-  List<String> getColumnNames();
+  
+    /**
+     * @return the schema of the table.
+     */
+  TableSchema getSchema();
 
   /**
    * @return SQL constraints for the table.
+   * TODO: probably this is schema related method
    */
   default SqlConstraints getSqlConstraints() {
     return new SqlConstraints(new ArrayList<>(), new ArrayList<>());
@@ -137,11 +125,13 @@ public interface FeTable {
 
   /**
    * @return an unmodifiable list of all partition columns.
+   * TODO: replace with corresponding method on TableSchema
    */
   List<Column> getClusteringColumns();
 
   /**
    * @return an unmodifiable list of all columns excluding any partition columns.
+   * TODO: replace with corresponding method on TableSchema
    */
   List<Column> getNonClusteringColumns();
 
@@ -158,27 +148,18 @@ public interface FeTable {
         .collect(Collectors.toList());
   }
 
+  // TODO: replace with corresponding method on TableSchema
   int getNumClusteringCols();
 
+  // TODO: replace with corresponding method on TableSchema
   boolean isClusteringColumn(Column c);
 
   /**
    * Return true when the column is used in a computed partition, e.g. in Iceberg
    * partition transforms.
+   * TODO: replace with corresponding method on TableSchema
    */
   default boolean isComputedPartitionColumn(Column c) { return false; }
-
-  /**
-   * Case-insensitive lookup.
-   *
-   * @return null if the column with 'name' is not found.
-   */
-  Column getColumn(String name);
-
-  /**
-   * @return the type of this table (array of struct) that mirrors the columns.
-   */
-  ArrayType getType();
 
   /**
    * @return the database that that contains this table
@@ -225,15 +206,4 @@ public interface FeTable {
    * @return the timestamp when the table is last loaded or reloaded in catalogd.
    */
   long getLastLoadedTimeMs();
-
-  /**
-   * Returns a list of thrift column descriptors ordered by position.
-   */
-  default List<TColumnDescriptor> getTColumnDescriptors() {
-    List<TColumnDescriptor> colDescs = new ArrayList<>();
-    for (Column col: getColumns()) {
-      colDescs.add(col.toDescriptor());
-    }
-    return colDescs;
-  }
 }

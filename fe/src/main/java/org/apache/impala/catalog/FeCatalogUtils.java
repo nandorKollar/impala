@@ -104,26 +104,6 @@ public abstract class FeCatalogUtils {
   }
 
   /**
-   * Convert a list of HMS FieldSchemas to internal Column types.
-   * @throws TableLoadingException if any type is invalid
-   */
-  public static ImmutableList<Column> fieldSchemasToColumns(
-      org.apache.hadoop.hive.metastore.api.Table msTbl) throws TableLoadingException {
-    boolean isFullAcidTable = AcidUtils.isFullAcidTable(msTbl.getParameters());
-    int pos = 0;
-    ImmutableList.Builder<Column> ret = ImmutableList.builder();
-    for (FieldSchema s : Iterables.concat(msTbl.getPartitionKeys(),
-                                          msTbl.getSd().getCols())) {
-      if (isFullAcidTable && pos == msTbl.getPartitionKeys().size()) {
-        ret.add(AcidUtils.getRowIdColumnType(pos++));
-      }
-      Type type = parseColumnType(s, msTbl.getTableName());
-      ret.add(new Column(s.getName(), type, s.getComment(), pos++));
-    }
-    return ret.build();
-  }
-
-  /**
    * Validate that the clustering columns are valid for a table
    *
    * TODO(todd): consider refactoring to combine with
@@ -153,7 +133,7 @@ public abstract class FeCatalogUtils {
   public static void injectColumnStats(
       List<ColumnStatisticsObj> colStats, FeTable table, SideloadTableStats testStats) {
     for (ColumnStatisticsObj stats: colStats) {
-      Column col = table.getColumn(stats.getColName());
+      Column col = table.getSchema().getColumn(stats.getColName());
       Preconditions.checkNotNull(col, "Unable to find column %s in table %s",
           stats.getColName(), table.getFullName());
       if (!ColumnStats.isSupportedColType(col.getType())) {
@@ -216,7 +196,7 @@ public abstract class FeCatalogUtils {
         table.getNumClusteringCols(), hmsPartitionValues.size());
     List<LiteralExpr> keyValues = new ArrayList<>();
     for (String partitionKey : hmsPartitionValues) {
-      Type type = table.getColumns().get(keyValues.size()).getType();
+      Type type = table.getSchema().getColumns().get(keyValues.size()).getType();
       // Deal with Hive's special NULL partition key.
       if (partitionKey.equals(table.getNullPartitionKeyValue())) {
         keyValues.add(NullLiteral.create(type));
@@ -372,7 +352,7 @@ public abstract class FeCatalogUtils {
       res.addToColumns(c.toThrift());
     }
     res.setVirtual_columns(new ArrayList<>());
-    for (VirtualColumn c : table.getVirtualColumns()) {
+    for (VirtualColumn c : table.getSchema().getVirtualColumns()) {
       res.addToVirtual_columns(c.toThrift());
     }
     if (table instanceof LocalFsTable) {

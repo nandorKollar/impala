@@ -108,7 +108,7 @@ public class IcebergUpdateImpl extends IcebergModifyImpl {
       colToExprs.put(c.getPosition(), rhsExpr);
     }
 
-    List<Column> columns = modifyStmt_.table_.getColumns();
+    List<Column> columns = modifyStmt_.table_.getSchema().getColumns();
     for (Column col : columns) {
       Expr expr = colToExprs.get(col.getPosition());
       if (expr == null) {
@@ -144,7 +144,7 @@ public class IcebergUpdateImpl extends IcebergModifyImpl {
       throws AnalysisException {
     // Cast result expressions to the correct type of the referenced slot of the
     // target table.
-    List<Column> columns = modifyStmt_.table_.getColumns();
+    List<Column> columns = modifyStmt_.table_.getSchema().getColumns();
     for (int i = 0; i < insertResultExprs_.size(); ++i) {
       Column col = columns.get(i);
       Expr resultExpr = sourceStmt_.resultExprs_.get(i);

@@ -70,7 +70,7 @@ public class HdfsPartitionFilter {
     }
 
     for (int i = 0; i < tbl.getNumClusteringCols(); ++i) {
-      Column col = tbl.getColumns().get(i);
+      Column col = tbl.getSchema().getColumns().get(i);
       SlotDescriptor slotDesc = slotDescsByCol.get(col);
       if (slotDesc != null) {
         lhsSlotRefs_.add(new SlotRef(slotDesc));

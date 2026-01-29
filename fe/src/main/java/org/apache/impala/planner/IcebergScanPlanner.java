@@ -423,7 +423,7 @@ public class IcebergScanPlanner {
     BinaryPredicate posEq = null;
     for (SlotDescriptor deleteSlotDesc : deleteTupleDesc.getSlots()) {
       boolean foundMatch = false;
-      Column col = deleteSlotDesc.getParent().getTable().getColumns().get(
+      Column col = deleteSlotDesc.getParent().getTable().getSchema().getColumns().get(
           deleteSlotDesc.getMaterializedPath().get(0));
       Preconditions.checkState(col instanceof IcebergColumn);
       int fieldId = ((IcebergColumn)col).getFieldId();

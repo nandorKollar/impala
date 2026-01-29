@@ -254,7 +254,7 @@ public class OptimizeStmt extends DmlStatementBase {
 
   private void createSourceStmt(Analyzer analyzer) throws AnalysisException {
     List<TableRef> tableRefs = Arrays.asList(tableRef_);
-    List<Column> columns = table_.getColumns();
+    List<Column> columns = table_.getSchema().getColumns();
     List<SelectListItem> selectListItems = new ArrayList<>();
     for (Column col : columns) {
       selectListItems.add(
@@ -269,7 +269,7 @@ public class OptimizeStmt extends DmlStatementBase {
   }
 
   private void prepareExpressions(Analyzer analyzer) throws AnalysisException {
-    List<Column> columns = table_.getColumns();
+    List<Column> columns = table_.getSchema().getColumns();
     for (Column col : columns) {
       resultExprs_.add(createSlotRef(analyzer, col.getName()));
     }

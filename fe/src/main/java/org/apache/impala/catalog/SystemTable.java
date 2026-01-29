@@ -65,7 +65,7 @@ public final class SystemTable extends Table implements FeSystemTable {
       Set<Long> referencedPartitions) {
     // Create thrift descriptors to send to the BE.
     TTableDescriptor tableDescriptor = new TTableDescriptor(tableId,
-        TTableType.SYSTEM_TABLE, getTColumnDescriptors(),
+        TTableType.SYSTEM_TABLE, getSchema().toTColumnDescriptors(),
         getNumClusteringCols(), getName(), getDb().getName());
     tableDescriptor.setSystemTable(getTSystemTable());
     return tableDescriptor;
@@ -107,7 +107,7 @@ public final class SystemTable extends Table implements FeSystemTable {
     try {
       // Reload all columns.
       clearColumns();
-      numClusteringCols_ = 0;
+      getSchema().setNumClusteringCols(0);
       int pos = 0;
       for (FieldSchema s: msTbl.getSd().getCols()) {
         addColumn(new Column(s.getName(), parseColumnType(s), s.getComment(), pos++));

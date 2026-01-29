@@ -17,6 +17,7 @@
 
 package org.apache.impala.catalog;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 
@@ -25,7 +26,7 @@ import org.apache.impala.thrift.TColumnStats;
 /**
  * Iceberg position delete table is created on the fly during planning. It belongs to an
  * actual Iceberg table (referred to as 'baseTable_'), but has a schema that corresponds
- * to the file schema of position delete files. Therefore with the help of it we can
+ * to the file schema of position delete files. Therefor with the help of it we can
  * do an ANTI JOIN between data files and position delete files.
  */
 public class IcebergPositionDeleteTable extends IcebergDeleteTable  {
@@ -44,16 +45,16 @@ public class IcebergPositionDeleteTable extends IcebergDeleteTable  {
       long deleteRecordsCount,
       TColumnStats filePathsStats) {
     super(baseTable, name, deleteFiles, deleteRecordsCount);
+    int columnCount = getSchema().getColumns().size();
     Column filePath = new IcebergColumn(FILE_PATH_COLUMN, Type.STRING, /*comment=*/"",
-        colsByPos_.size(), IcebergTable.V2_FILE_PATH_FIELD_ID, INVALID_MAP_KEY_ID,
+        columnCount, IcebergTable.V2_FILE_PATH_FIELD_ID, INVALID_MAP_KEY_ID,
         INVALID_MAP_VALUE_ID, /*nullable=*/false);
     Column pos = new IcebergColumn(POS_COLUMN, Type.BIGINT, /*comment=*/"",
-        colsByPos_.size(), IcebergTable.V2_POS_FIELD_ID, INVALID_MAP_KEY_ID,
+        columnCount + 1, IcebergTable.V2_POS_FIELD_ID, INVALID_MAP_KEY_ID,
         INVALID_MAP_VALUE_ID, /*nullable=*/false);
     filePath.updateStats(filePathsStats);
     pos.updateStats(getPosStats(pos));
-    addColumn(filePath);
-    addColumn(pos);
+    tableSchema_ = new TableSchema(Arrays.asList(filePath, pos), Collections.emptyList(),0);
   }
 
   private TColumnStats getPosStats(Column pos) {

@@ -282,7 +282,7 @@ public class DataSourceTable extends Table implements FeDataSourceTable {
       throw new TableLoadingException("Data source table cannot contain clustering " +
           "columns: " + name_);
     }
-    numClusteringCols_ = 0;
+    getSchema().setNumClusteringCols(0);
 
     try {
       // Create column objects.
@@ -339,8 +339,8 @@ public class DataSourceTable extends Table implements FeDataSourceTable {
   @Override
   public TTableDescriptor toThriftDescriptor(int tableId, Set<Long> referencedPartitions) {
     TTableDescriptor tableDesc = new TTableDescriptor(tableId,
-        TTableType.DATA_SOURCE_TABLE, getTColumnDescriptors(), numClusteringCols_,
-        name_, db_.getName());
+        TTableType.DATA_SOURCE_TABLE, getSchema().toTColumnDescriptors(),
+        getSchema().getNumClusteringCols(), name_, db_.getName());
     tableDesc.setDataSourceTable(getDataSourceTable());
     return tableDesc;
   }

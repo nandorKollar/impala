@@ -536,7 +536,7 @@ public abstract class Catalog implements AutoCloseable {
     }
     for (int i = 0; i < msPart.getValues().size(); ++i) {
       partitionSpec.add(new TPartitionKeyValue(
-          ((HdfsTable)table).getColumns().get(i).getName(), msPart.getValues().get(i)));
+          table.getSchema().getColumns().get(i).getName(), msPart.getValues().get(i)));
     }
     return getHdfsPartition(table.getDb().getName(), table.getName(), partitionSpec);
   }

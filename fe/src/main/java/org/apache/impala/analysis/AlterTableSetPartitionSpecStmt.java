@@ -80,7 +80,7 @@ public class AlterTableSetPartitionSpecStmt extends AlterTableStmt {
 
     // Check partition field names and source column types.
     for (IcebergPartitionField partField : icebergPartSpec_.getIcebergPartitionFields()) {
-      Column col = table.getColumn(partField.getFieldName());
+      Column col = table.getSchema().getColumn(partField.getFieldName());
       if (col == null) {
         throw new AnalysisException(String.format(
             "Source column '%s' does not exist in table: %s", partField.getFieldName(),

@@ -100,9 +100,6 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
   private final ReadLock readLock_ = tableLock_.readLock();
   private final WriteLock writeLock_ = tableLock_.writeLock();
 
-  // Number of clustering columns.
-  protected int numClusteringCols_;
-
   // Contains the estimated number of rows and optional file bytes. Non-null. Member
   // values of -1 indicate an unknown statistic.
   protected TTableStats tableStats_;
@@ -123,19 +120,6 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
 
   // Metrics for this table
   protected final Metrics metrics_ = new Metrics();
-
-  // colsByPos[i] refers to the ith column in the table. The first numClusteringCols are
-  // the clustering columns.
-  protected final ArrayList<Column> colsByPos_ = new ArrayList<>();
-
-  // Virtual columns of this table.
-  protected final ArrayList<VirtualColumn> virtualCols_ = new ArrayList<>();
-
-  // map from lowercase column name to Column object.
-  protected final Map<String, Column> colsByName_ = new HashMap<>();
-
-  // Type of this table (array of struct) that mirrors the columns. Useful for analysis.
-  protected final ArrayType type_ = new ArrayType(new StructType());
 
   // True if this object is stored in an Impalad catalog cache.
   protected boolean storedInImpaladCatalogCache_ = false;
@@ -223,6 +207,8 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
   // Valid value for testing should be > 0.
   // In non test environment, value should remain unchanged at -1.0.
   protected double testMetadataScale_ = -1.0;
+
+  private TableSchema schema;
 
   protected Table(org.apache.hadoop.hive.metastore.api.Table msTable, Db db,
       String name, String owner) {
@@ -469,21 +455,15 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
   }
 
   public void addColumn(Column col) {
-    colsByPos_.add(col);
-    colsByName_.put(col.getName().toLowerCase(), col);
-    ((StructType) type_.getItemType()).addField(
-        new StructField(col.getName(), col.getType(), col.getComment()));
+    getSchema().addColumn(col);
   }
 
   public void clearColumns() {
-    colsByPos_.clear();
-    colsByName_.clear();
-    ((StructType) type_.getItemType()).clearFields();
-    virtualCols_.clear();
+    getSchema().clearColumns();
   }
 
   protected void addVirtualColumn(VirtualColumn col) {
-    virtualCols_.add(col);
+    getSchema().getVirtualColumns().add(col);
   }
 
   // Returns a list of all column names for this table which we expect to have column
@@ -494,7 +474,7 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
   // stats. This method allows each table type to volunteer the set of columns we should
   // ask the metastore for in loadAllColumnStats().
   protected List<String> getColumnNamesWithHmsStats() {
-    List<Column> columns = filterColumnsNotStoredInHms(getColumns());
+    List<Column> columns = filterColumnsNotStoredInHms(getSchema().getColumns());
     return columns.stream()
         .map(col->col.getName().toLowerCase())
         .collect(Collectors.toList());
@@ -623,34 +603,17 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
 
   @Override // FeTable
   public boolean isClusteringColumn(Column c) {
-    return c.getPosition() < numClusteringCols_;
+    return c.getPosition() < getSchema().getNumClusteringCols();
   }
 
   protected void loadFromThrift(TTable thriftTable) throws TableLoadingException {
-    List<TColumn> columns = new ArrayList<TColumn>();
-    columns.addAll(thriftTable.getClustering_columns());
-    columns.addAll(thriftTable.getColumns());
-
-    colsByPos_.clear();
-    colsByPos_.ensureCapacity(columns.size());
     try {
-      for (int i = 0; i < columns.size(); ++i) {
-        Column col = Column.fromThrift(columns.get(i));
-        colsByPos_.add(col.getPosition(), col);
-        colsByName_.put(col.getName().toLowerCase(), col);
-        ((StructType) type_.getItemType()).addField(getStructFieldFromColumn(col));
-      }
-      virtualCols_.clear();
-      virtualCols_.ensureCapacity(thriftTable.getVirtual_columns().size());
-      for (TColumn tvCol : thriftTable.getVirtual_columns()) {
-        virtualCols_.add(VirtualColumn.fromThrift(tvCol));
-      }
+      schema = new TableSchema(thriftTable);
     } catch (ImpalaRuntimeException e) {
       throw new TableLoadingException(String.format("Error loading schema for " +
           "table '%s'", getName()), e);
     }
 
-    numClusteringCols_ = thriftTable.getClustering_columns().size();
     if (thriftTable.isSetTable_stats()) tableStats_ = thriftTable.getTable_stats();
 
     // Default to READ_WRITE access if the field is not set.
@@ -661,34 +624,11 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
   }
 
   /**
-   * If column is 'IcebergColumn', we return 'IcebergStructField', otherwise, we
-   * just return 'StructField'.
-   */
-  private StructField getStructFieldFromColumn(Column col) {
-    if (col instanceof IcebergColumn) {
-      IcebergColumn iCol = (IcebergColumn) col;
-      return new IcebergStructField(iCol.getName(), iCol.getType(),
-          iCol.getComment(), iCol.getFieldId());
-    } else if (col instanceof PaimonColumn) {
-      PaimonColumn pCol = (PaimonColumn) col;
-      return new PaimonStructField(pCol.getName(), pCol.getType(), pCol.getComment(),
-          pCol.getFieldId(), pCol.isNullable());
-    } else {
-      return new StructField(col.getName(), col.getType(), col.getComment());
-    }
-  }
-
-  /**
    * Checks preconditions for this table to function as expected. Currently only checks
    * that all entries in colsByName_ use lower case keys.
    */
   public void validate() throws TableLoadingException {
-    for (String colName: colsByName_.keySet()) {
-      if (!colName.equals(colName.toLowerCase())) {
-        throw new TableLoadingException(
-            "Expected lower case column name but found: " + colName);
-      }
-    }
+    getSchema().validate();
   }
 
   /**
@@ -717,17 +657,17 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
     // Populate both regular columns and clustering columns (if there are any).
     table.setColumns(new ArrayList<>());
     table.setClustering_columns(new ArrayList<>());
-    for (int i = 0; i < colsByPos_.size(); ++i) {
-      TColumn colDesc = colsByPos_.get(i).toThrift();
+    for (int i = 0; i < getSchema().getColumns().size(); ++i) {
+      TColumn colDesc = getSchema().getColumns().get(i).toThrift();
       // Clustering columns come first.
-      if (i < numClusteringCols_) {
+      if (i < getSchema().getNumClusteringCols()) {
         table.addToClustering_columns(colDesc);
       } else {
         table.addToColumns(colDesc);
       }
     }
     table.setVirtual_columns(new ArrayList<>());
-    for (VirtualColumn vCol : getVirtualColumns()) {
+    for (VirtualColumn vCol : schema.getVirtualColumns()) {
       table.addToVirtual_columns(vCol.toThrift());
     }
 
@@ -834,18 +774,18 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
       // is done while we continue to hold the table lock.
       resp.table_info.setHms_table(getMetaStoreTable().deepCopy());
       resp.table_info.setVirtual_columns(new ArrayList<>());
-      for (VirtualColumn vCol : getVirtualColumns()) {
+      for (VirtualColumn vCol : schema.getVirtualColumns()) {
         resp.table_info.addToVirtual_columns(vCol.toThrift());
       }
     }
     if (selector.want_stats_for_column_names != null ||
         selector.want_stats_for_all_columns) {
-      List<String> colList = selector.want_stats_for_all_columns ? getColumnNames() :
+      List<String> colList = selector.want_stats_for_all_columns ? schema.getColumnNames() :
           selector.want_stats_for_column_names;
       List<ColumnStatisticsObj> statsList =
           Lists.newArrayListWithCapacity(colList.size());
       for (String colName: colList) {
-        Column col = getColumn(colName);
+        Column col = schema.getColumn(colName);
         if (col == null) continue;
 
         // Don't return stats for HDFS partitioning columns, since these are computed
@@ -905,15 +845,6 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
     return MetadataOp.getTableComment(msTable_);
   }
 
-  @Override // FeTable
-  public List<Column> getColumns() { return colsByPos_; }
-
-  @Override // FeTable
-  public List<VirtualColumn> getVirtualColumns() { return virtualCols_; }
-
-  @Override // FeTable
-  public List<String> getColumnNames() { return Column.toColumnNames(colsByPos_); }
-
   /**
    * Subclasses should override this if they provide a storage handler class. Currently
    * only HBase tables need to provide a storage handler.
@@ -931,17 +862,13 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
 
   @Override // FeTable
   public List<Column> getClusteringColumns() {
-    return Collections.unmodifiableList(colsByPos_.subList(0, numClusteringCols_));
+    return getSchema().getClusteringColumns();
   }
 
   @Override // FeTable
   public List<Column> getNonClusteringColumns() {
-    return Collections.unmodifiableList(colsByPos_.subList(numClusteringCols_,
-        colsByPos_.size()));
+    return getSchema().getNonClusteringColumns();
   }
-
-  @Override // FeTable
-  public Column getColumn(String name) { return colsByName_.get(name.toLowerCase()); }
 
   @Override // FeTable
   public org.apache.hadoop.hive.metastore.api.Table getMetaStoreTable() {
@@ -964,7 +891,7 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
   }
 
   @Override // FeTable
-  public int getNumClusteringCols() { return numClusteringCols_; }
+  public int getNumClusteringCols() { return getSchema().getNumClusteringCols(); }
 
   /**
    * Sets the number of clustering columns. This method should only be used for tests and
@@ -973,7 +900,7 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
    */
   public void setNumClusteringCols(int n) {
     Preconditions.checkState(RuntimeEnv.INSTANCE.isTestEnv());
-    numClusteringCols_ = n;
+    getSchema().setNumClusteringCols(n);
   }
 
   @Override // FeTable
@@ -981,9 +908,6 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
 
   @Override // FeTable
   public TTableStats getTTableStats() { return tableStats_; }
-
-  @Override // FeTable
-  public ArrayType getType() { return type_; }
 
   /**
    * If the table is cached, it returns a <cache pool name, replication factor> pair
@@ -999,7 +923,7 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
         cachePoolName = HdfsCachingUtil.getCachePool(cacheDirId);
         cacheReplication = HdfsCachingUtil.getCacheReplication(cacheDirId);
         Preconditions.checkNotNull(cacheReplication);
-        if (numClusteringCols_ == 0) cacheDirIds.add(cacheDirId);
+        if (getSchema().getNumClusteringCols() == 0) cacheDirIds.add(cacheDirId);
       } catch (ImpalaRuntimeException e) {
         // Catch the error so that the actual update to the catalog can progress,
         // this resets caching for the table though
@@ -1138,6 +1062,11 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
     if (lastSyncedEventId_ < eventId && isSetLastSyncEventId) {
       setLastSyncedEventId(eventId);
     }
+  }
+
+  @Override
+  public TableSchema getSchema() {
+    return schema;
   }
 
   public double getDebugMetadataScale() { return testMetadataScale_; }

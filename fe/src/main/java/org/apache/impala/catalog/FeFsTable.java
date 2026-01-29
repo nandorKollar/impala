@@ -204,6 +204,7 @@ public interface FeFsTable extends FeTable {
   /**
    * @return true if this table's schema as stored in the HMS has been overridden
    * by an Avro schema.
+   * TODO: replace with corresponding method on TableSchema
    */
   boolean usesAvroSchemaOverride();
 
@@ -318,6 +319,7 @@ public interface FeFsTable extends FeTable {
   /**
    * @return  List of primary keys column names, useful for toSqlUtils. In local
    * catalog mode, this causes load of constraints.
+   * TODO: possibly related to TableSchema?
    */
   default List<String> getPrimaryKeyColumnNames() throws TException {
     List<String> primaryKeyColNames = new ArrayList<>();
@@ -339,6 +341,7 @@ public interface FeFsTable extends FeTable {
    * Get foreign keys information as strings. Useful for toSqlUtils.
    * @return List of strings of the form "(col1, col2,..) REFERENCES [pk_db].pk_table
    * (colA, colB,..)". In local catalog mode, this causes load of constraints.
+   * TODO: this works on getSqlConstraints, isn't it rather belong there?
    */
   default List<String> getForeignKeysSql() throws TException{
     List<String> foreignKeysSql = new ArrayList<>();
@@ -456,6 +459,7 @@ public interface FeFsTable extends FeTable {
    * Helper method to build the schema for table stats result set.
    * @param result The TResultSet to populate with schema information
    * @return true if stats extrapolation is enabled for this table
+   * TODO: this does schema related stuff too! getSchema().getColumns() and getNumClusteringCols are both schema methods
    */
   default boolean buildTableStatsSchema(TResultSet result) {
     TResultSetMetadata resultSchema = new TResultSetMetadata();
@@ -464,7 +468,7 @@ public interface FeFsTable extends FeTable {
 
     // Add partition column headers
     for (int i = 0; i < getNumClusteringCols(); ++i) {
-      Column partCol = getColumns().get(i);
+      Column partCol = getSchema().getColumns().get(i);
       TColumn colDesc = new TColumn(partCol.getName(), Type.STRING.toThrift());
       resultSchema.addToColumns(colDesc);
     }

@@ -27,6 +27,7 @@ import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.serde2.SerDeException;
 import org.apache.impala.catalog.Column;
 import org.apache.impala.catalog.FeHBaseTable;
+import org.apache.impala.catalog.TableSchema;
 import org.apache.impala.catalog.local.MetaProvider.TableMetaRef;
 import org.apache.impala.common.Pair;
 import org.apache.impala.thrift.TResultSet;
@@ -44,8 +45,8 @@ public class LocalHbaseTable extends LocalTable implements FeHBaseTable {
   // TODO: revisit after caching is implemented for local catalog
   private HColumnDescriptor[] columnFamilies_ = null;
 
-  private LocalHbaseTable(LocalDb db, Table msTbl, TableMetaRef ref, ColumnMap cols) {
-    super(db, msTbl, ref, cols);
+  private LocalHbaseTable(LocalDb db, Table msTbl, TableMetaRef ref, TableSchema schema) {
+    super(db, msTbl, ref, schema);
     hbaseTableName_ = Util.getHBaseTableName(msTbl);
   }
 
@@ -55,9 +56,9 @@ public class LocalHbaseTable extends LocalTable implements FeHBaseTable {
       Util.getHBaseTable(Util.getHBaseTableName(msTable)).close();
       // since we don't support composite hbase rowkeys yet, all hbase tables have a
       // single clustering col
-      ColumnMap cmap = new ColumnMap(Util.loadColumns(msTable), 1,
+      TableSchema schema = new TableSchema(Util.loadColumns(msTable), 1,
           msTable.getDbName() + "." + msTable.getTableName(), /*isFullAcidSchema=*/false);
-      return new LocalHbaseTable(db, msTable, ref, cmap);
+      return new LocalHbaseTable(db, msTable, ref, schema);
     } catch (IOException | MetaException | SerDeException e) {
       throw new LocalCatalogException(e);
     }
@@ -68,7 +69,7 @@ public class LocalHbaseTable extends LocalTable implements FeHBaseTable {
       Set<Long> referencedPartitions) {
     TTableDescriptor tableDescriptor =
         new TTableDescriptor(tableId, TTableType.HBASE_TABLE,
-            getTColumnDescriptors(), 1, getHBaseTableName(),
+            getSchema().toTColumnDescriptors(), 1, getHBaseTableName(),
             db_.getName());
     tableDescriptor.setHbaseTable(Util.getTHBaseTable(this));
     return tableDescriptor;
@@ -102,7 +103,12 @@ public class LocalHbaseTable extends LocalTable implements FeHBaseTable {
 
   @Override
   public List<Column> getColumnsInHiveOrder() {
-    return getColumns();
+    return getSchema().getColumns();
+  }
+
+  @Override
+  public TableSchema getSchema() {
+    throw new RuntimeException("Hbase table doesn't have a schema");
   }
 
   /**

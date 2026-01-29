@@ -128,7 +128,7 @@ public class HBaseScanNode extends ScanNode {
   public void init(Analyzer analyzer) throws ImpalaException {
     FeTable table = desc_.getTable();
     // determine scan predicates for clustering cols
-    List<Column> columns = table.getColumns();
+    List<Column> columns = table.getSchema().getColumns();
     for (int i = 0; i < columns.size(); ++i) {
       HBaseColumn col = (HBaseColumn) columns.get(i);
       if (!col.isKeyColumn()) continue;
@@ -661,11 +661,11 @@ public class HBaseScanNode extends ScanNode {
   public void computeNodeResourceProfile(TQueryOptions queryOptions) {
     FeHBaseTable tbl = (FeHBaseTable) desc_.getTable();
     // The first column in an HBase table is always the key column.
-    HBaseColumn keyCol = (HBaseColumn) tbl.getColumns().get(0);
+    HBaseColumn keyCol = (HBaseColumn) tbl.getSchema().getColumns().get(0);
 
     List<HBaseColumn> colsToFetchFromHBase = new ArrayList<>();
     for (SlotDescriptor slot : desc_.getSlots()) {
-      HBaseColumn col = (HBaseColumn) tbl.getColumn(slot.getLabel());
+      HBaseColumn col = (HBaseColumn) tbl.getSchema().getColumn(slot.getLabel());
       // Will add key column separately, since its always fetched.
       if (col.getColumnFamily().equals(FeHBaseTable.Util.ROW_KEY_COLUMN_FAMILY)) continue;
       colsToFetchFromHBase.add(col);

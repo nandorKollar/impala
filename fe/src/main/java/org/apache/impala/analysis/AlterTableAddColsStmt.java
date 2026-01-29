@@ -90,7 +90,7 @@ public class AlterTableAddColsStmt extends AlterTableStmt {
             "Column name conflicts with existing partition column: " + colName);
       }
 
-      Column col = t.getColumn(colName);
+      Column col = t.getSchema().getColumn(colName);
       if (col != null) {
         if (!ifNotExists_) {
           throw new AnalysisException("Column already exists: " + colName);

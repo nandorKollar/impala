@@ -172,7 +172,7 @@ public class LocalDataSourceTable extends LocalTable implements FeDataSourceTabl
   public TTableDescriptor toThriftDescriptor(
       int tableId, Set<Long> referencedPartitions) {
     TTableDescriptor tableDesc = new TTableDescriptor(tableId,
-        TTableType.DATA_SOURCE_TABLE, getTColumnDescriptors(),
+        TTableType.DATA_SOURCE_TABLE, getSchema().toTColumnDescriptors(),
         getNumClusteringCols(), getName(), getDb().getName());
     tableDesc.setDataSourceTable(getDataSourceTable());
     return tableDesc;

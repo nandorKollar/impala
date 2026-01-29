@@ -81,7 +81,7 @@ public interface FePaimonTable extends FeTable, FeShowFileStmtSupport {
     if (!stats.isPresent()) return;
     Map<String, ColStats<?>> colStatsMap = stats.get().colStats();
     for (String colName : colStatsMap.keySet()) {
-      Column col = this.getColumn(colName.toLowerCase());
+      Column col = this.getSchema().getColumn(colName);
       if (null == col) { continue; }
 
       if (!ColumnStats.isSupportedColType(col.getType())) {

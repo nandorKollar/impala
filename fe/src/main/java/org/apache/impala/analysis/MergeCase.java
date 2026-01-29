@@ -70,7 +70,7 @@ public abstract class MergeCase extends StatementBase {
 
   public void setParent(MergeStmt parent) {
     targetTableName_ = parent.getTargetTable().getTableName();
-    targetTableColumns_ = parent.getTargetTable().getColumns();
+    targetTableColumns_ = parent.getTargetTable().getSchema().getColumns();
     targetTableRef_ = parent.getTargetTableRef();
     sourceTableRef_ = parent.getSourceTableRef();
   }
@@ -80,7 +80,7 @@ public abstract class MergeCase extends StatementBase {
       InlineViewRef source = (InlineViewRef) sourceTableRef_;
       return source.getColLabels();
     } else {
-      return sourceTableRef_.getTable().getColumnNames();
+      return sourceTableRef_.getTable().getSchema().getColumnNames();
     }
   }
 

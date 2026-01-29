@@ -89,7 +89,7 @@ public class LocalSystemTable extends LocalTable implements FeSystemTable {
   public TTableDescriptor toThriftDescriptor(
       int tableId, Set<Long> referencedPartitions) {
     TTableDescriptor tableDescriptor = new TTableDescriptor(tableId,
-        TTableType.SYSTEM_TABLE, getTColumnDescriptors(),
+        TTableType.SYSTEM_TABLE, getSchema().toTColumnDescriptors(),
         getNumClusteringCols(), getName(), getDb().getName());
     tableDescriptor.setSystemTable(getTSystemTable());
     return tableDescriptor;

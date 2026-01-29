@@ -127,7 +127,7 @@ public class IcebergMergeImpl implements MergeImpl {
           "Unsupported '%s': '%s' for Iceberg table: %s",
           TableProperties.MERGE_MODE, modifyWriteMode, icebergTable_.getFullName()));
     }
-    for (Column column : icebergTable_.getColumns()) {
+    for (Column column : icebergTable_.getSchema().getColumns()) {
       Path slotPath =
           new Path(targetTableRef_.desc_, Collections.singletonList(column.getName()));
       slotPath.resolve();
@@ -148,7 +148,7 @@ public class IcebergMergeImpl implements MergeImpl {
           icebergPositionalDeleteTable_);
     }
 
-    IcebergUtil.populatePartitionExprs(analyzer, null, table_.getColumns(),
+    IcebergUtil.populatePartitionExprs(analyzer, null, table_.getSchema().getColumns(),
         getResultExprs(), icebergTable_, targetPartitionExpressions_, null);
 
     analyzer.registerPrivReq(
@@ -307,7 +307,7 @@ public class IcebergMergeImpl implements MergeImpl {
     // Straight join hint is required to fix the join sides.
     selectList.setPlanHints(Collections.singletonList(new PlanHint("straight_join")));
     List<Expr> targetSlotRefs =
-        targetTableRef_.getTable().getColumns().stream()
+        targetTableRef_.getTable().getSchema().getColumns().stream()
             .map(column -> new SlotRef(
                 ImmutableList.of(targetTableRef_.getUniqueAlias(),
                     column.getName())))

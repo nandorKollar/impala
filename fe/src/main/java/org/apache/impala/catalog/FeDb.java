@@ -24,7 +24,6 @@ import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.impala.analysis.ColumnDef;
 import org.apache.impala.analysis.KuduPartitionParam;
-import org.apache.impala.common.ImpalaException;
 import org.apache.impala.common.ImpalaRuntimeException;
 import org.apache.impala.thrift.TDatabase;
 import org.apache.impala.thrift.TFunctionCategory;
@@ -42,12 +41,6 @@ public interface FeDb extends HasName {
       return db1.getName().compareTo(db2.getName());
     }
   };
-
-  /**
-   * @return the name of the database
-   */
-  @Override
-  String getName();
 
   /**
    * @return the metastore.api.Database object this Database was created from,
