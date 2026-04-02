@@ -140,7 +140,7 @@ public class IcebergCatalogOpExecutor {
       // The table didn't exist.
       if (!ifExists) {
         throw new TableNotFoundException(String.format(
-            "Table '%s' does not exist in Iceberg catalog.", feTable.getFullName()));
+            "Table '%s' does not exist in Iceberg catalog.", feTable.getTableName()));
       }
     }
   }

@@ -380,7 +380,7 @@ public class HBaseScanNode extends ScanNode {
     FeHBaseTable tbl = (FeHBaseTable) desc_.getTable();
     return MoreObjects.toStringHelper(this)
         .add("tid", desc_.getId().asInt())
-        .add("hiveTblName", tbl.getFullName())
+        .add("hiveTblName", tbl.getTableName())
         .add("hbaseTblName", tbl.getHBaseTableName())
         .add("startKey", ByteBuffer.wrap(startKey_).toString())
         .add("stopKey", ByteBuffer.wrap(stopKey_).toString())
@@ -561,12 +561,12 @@ public class HBaseScanNode extends ScanNode {
       return output.toString();
     }
     String aliasStr = "";
-    if (!table.getFullName().equalsIgnoreCase(desc_.getAlias()) &&
+    if (!table.getTableName().fullName().equalsIgnoreCase(desc_.getAlias()) &&
         !table.getName().equalsIgnoreCase(desc_.getAlias())) {
       aliasStr = " " + desc_.getAlias();
     }
     output.append(String.format("%s%s:%s [%s%s]\n", prefix, id_.toString(),
-        displayName_, table.getFullName(), aliasStr));
+        displayName_, table.getTableName().fullName(), aliasStr));
     if (detailLevel.ordinal() >= TExplainLevel.STANDARD.ordinal()) {
       if (!keyConjuncts_.isEmpty()) {
         output.append(detailPrefix + "key predicates: " +

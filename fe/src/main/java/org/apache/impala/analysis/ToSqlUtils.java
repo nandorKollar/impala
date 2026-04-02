@@ -35,7 +35,6 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.hadoop.hive.common.StatsSetupConst;
 import org.apache.hadoop.hive.ql.parse.HiveLexer;
-import org.apache.iceberg.TableProperties;
 import org.apache.impala.catalog.CatalogException;
 import org.apache.impala.catalog.Column;
 import org.apache.impala.catalog.ColumnStats;
@@ -91,7 +90,22 @@ import com.google.common.collect.Maps;
 public class ToSqlUtils {
   private final static Logger LOG = LoggerFactory.getLogger(ToSqlUtils.class);
 
-  // Table properties to hide when generating the toSql() statement
+    // Internal table property that specifies the number of rows in the table.
+    private static final String NUM_ROWS = "numRows";
+
+    // Internal table property that specifies which user the table was last modified by.
+    private static final String LAST_MODIFIED_BY = "last_modified_by";
+
+    // Internal table property that specifies when the table was last modified.
+    private static final String LAST_MODIFIED_TIME = "last_modified_time";
+
+    // Internal table property that specifies the catalog service id.
+    private static final String CATALOG_SERVICE_ID = "impala.events.catalogServiceId";
+
+    // Internal table property that specifies the catalog version of the table.
+    private static final String CATALOG_VERSION = "impala.events.catalogVersion";
+
+    // Table properties to hide when generating the toSql() statement
   // EXTERNAL, SORT BY [order], and comment are hidden because they are part of the
   // toSql result, e.g.,
   // "CREATE EXTERNAL TABLE <name> ... SORT BY ZORDER (...) ... COMMENT <comment> ..."
@@ -104,11 +118,11 @@ public class ToSqlUtils {
       FeFsTable.NUM_ERASURE_CODED_FILES,
       FeFsTable.NUM_FILES,
       FeFsTable.TOTAL_SIZE,
-      FeTable.CATALOG_SERVICE_ID,
-      FeTable.CATALOG_VERSION,
-      FeTable.LAST_MODIFIED_BY,
-      FeTable.LAST_MODIFIED_TIME,
-      FeTable.NUM_ROWS);
+      CATALOG_SERVICE_ID,
+      CATALOG_VERSION,
+      LAST_MODIFIED_BY,
+      LAST_MODIFIED_TIME,
+      NUM_ROWS);
 
   // Internal Iceberg metadata table properties to remove from iceberg table
   @VisibleForTesting

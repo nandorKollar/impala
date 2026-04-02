@@ -122,7 +122,7 @@ public abstract class AlterTableStmt extends StatementBase implements SingleTabl
     }
     if (table_ instanceof FePaimonTable) {
       throw new AnalysisException(String.format(
-          "ALTER TABLE not allowed on PAIMON table: %s", table_.getFullName()));
+          "ALTER TABLE not allowed on PAIMON table: %s", table_.getTableName()));
     }
   }
 

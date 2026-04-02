@@ -113,7 +113,7 @@ public class PartitionDef extends StmtNode {
         throw new AnalysisException(String.format("Location '%s' cannot be cached. " +
             "Please retry without caching: ALTER TABLE %s ADD PARTITION ... UNCACHED",
             (location_ != null) ? location_.toString() : hdfsTable.getLocation(),
-            hdfsTable.getFullName()));
+            hdfsTable.getTableName()));
       }
     }
   }

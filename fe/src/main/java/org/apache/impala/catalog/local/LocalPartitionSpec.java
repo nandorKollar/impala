@@ -66,7 +66,7 @@ class LocalPartitionSpec implements PrunablePartition {
     } catch (CatalogException | MetaException e) {
       throw new LocalCatalogException(String.format(
           "Failed to parse partition name '%s' for table %s",
-          ref.getName(), table.getFullName()), e);
+          ref.getName(), table.getTableName()), e);
     }
   }
 

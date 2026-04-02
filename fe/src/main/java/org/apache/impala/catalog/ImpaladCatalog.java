@@ -486,7 +486,7 @@ public class ImpaladCatalog extends Catalog implements FeCatalog {
     if (existingTable != null && existingTable.getCatalogVersion() >= catalogVersion) {
       if (LOG.isTraceEnabled()) {
         LOG.trace("Ignore stale update on table {}: currentVersion={}, updateVersion={}",
-            existingTable.getFullName(), existingTable.getCatalogVersion(),
+            existingTable.getTableName(), existingTable.getCatalogVersion(),
             catalogVersion);
       }
       return;
@@ -538,7 +538,7 @@ public class ImpaladCatalog extends Catalog implements FeCatalog {
         // catalog update. (IMPALA-10283)
         if (newHdfsTable.getPartitionMap().containsKey(tPart.id)) {
           LOG.info("Skip adding existing partition (id:{}, name:{}) to table {}",
-              tPart.id, tPart.partition_name, newHdfsTable.getFullName());
+              tPart.id, tPart.partition_name, newHdfsTable.getTableName());
           continue;
         }
         HdfsPartition part = new HdfsPartition.Builder(newHdfsTable, tPart.id)
@@ -546,9 +546,9 @@ public class ImpaladCatalog extends Catalog implements FeCatalog {
             .build();
         Preconditions.checkState(newHdfsTable.addPartitionNoThrow(part),
             "Failed adding new partition (id:{}, name:{}) to table {}",
-            tPart.id, tPart.partition_name, newHdfsTable.getFullName());
+            tPart.id, tPart.partition_name, newHdfsTable.getTableName());
         LOG.trace("Added partition (id:{}, name:{}) to table {}",
-            tPart.id, tPart.partition_name, newHdfsTable.getFullName());
+            tPart.id, tPart.partition_name, newHdfsTable.getTableName());
         numNewParts++;
       }
       if (!stalePartitionNames.isEmpty()) {

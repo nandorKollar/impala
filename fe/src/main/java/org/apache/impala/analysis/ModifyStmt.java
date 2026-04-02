@@ -155,7 +155,7 @@ public abstract class ModifyStmt extends DmlStatementBase {
       throw new AnalysisException(
           format("Impala only supports modifying Kudu and Iceberg tables, " +
               "but the following table is neither: %s",
-              dstTbl.getFullName()));
+              dstTbl.getTableName()));
     }
     if (dstTbl instanceof FeIcebergTable) {
       setMaxTableSinks(analyzer_.getQueryOptions().getMax_fs_writers());

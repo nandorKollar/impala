@@ -1365,14 +1365,14 @@ public class IcebergUtil {
       if (c.getType().isComplexType()) {
         throw new AnalysisException(String.format("Impala does not support writing " +
                 "tables with complex types. Table '%s' has column '%s' " +
-                "with type: %s", iceTable.getFullName(), c.getName(),
+                "with type: %s", iceTable.getTableName(), c.getName(),
             c.getType().toSql()));
       }
     }
     if (iceTable.getIcebergFileFormat() != TIcebergFileFormat.PARQUET) {
       throw new AnalysisException(String.format("Impala can only write Parquet data " +
               "files, while table '%s' expects '%s' data files.",
-          iceTable.getFullName(), iceTable.getIcebergFileFormat().toString()));
+          iceTable.getTableName(), iceTable.getIcebergFileFormat().toString()));
     }
   }
 
@@ -1389,7 +1389,7 @@ public class IcebergUtil {
     Preconditions.checkState(outPartitionColPos == null || outPartitionColPos.isEmpty());
     IcebergPartitionSpec icebergPartSpec = targetTable.getDefaultPartitionSpec();
     if (!icebergPartSpec.hasPartitionFields()) return;
-    String tableName = targetTable.getFullName();
+    String tableName = targetTable.getTableName().fullName();
     for (IcebergPartitionField partField : icebergPartSpec.getIcebergPartitionFields()) {
       if (partField.getTransformType() == TIcebergPartitionTransformType.VOID) continue;
       for (int i = 0; i < selectListExprs.size(); ++i) {

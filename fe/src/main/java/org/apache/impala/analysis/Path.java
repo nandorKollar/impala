@@ -593,7 +593,7 @@ public class Path {
     if (rootDesc_ != null) {
       pathRoot = rootDesc_.getAlias();
     } else {
-      pathRoot = rootTable_.getFullName();
+      pathRoot = rootTable_.getTableName().toString();
     }
     if (rawPath_.isEmpty()) return pathRoot;
     return pathRoot + "." + Joiner.on(".").join(rawPath_);

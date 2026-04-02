@@ -110,7 +110,7 @@ public class LocalCatalogTest {
     assertSame(db, t.getDb());
     assertEquals("alltypes", t.getName());
     assertEquals("functional", t.getDb().getName());
-    assertEquals("functional.alltypes", t.getFullName());
+    assertEquals("functional.alltypes", t.getTableName().fullName());
   }
 
   @Test

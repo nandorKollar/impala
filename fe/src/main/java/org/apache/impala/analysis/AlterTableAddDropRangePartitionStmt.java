@@ -94,7 +94,7 @@ public class AlterTableAddDropRangePartitionStmt extends AlterTableStmt {
     FeTable table = getTargetTable();
     if (!(table instanceof FeKuduTable)) {
       throw new AnalysisException(String.format("Table %s does not support range " +
-          "partitions: RANGE %s", table.getFullName(), rangePartitionSpec_.toSql()));
+          "partitions: RANGE %s", table.getTableName(), rangePartitionSpec_.toSql()));
     }
     FeKuduTable kuduTable = (FeKuduTable) table;
     List<String> colNames = FeKuduTable.Utils.getRangePartitioningColNames(kuduTable);

@@ -1630,7 +1630,7 @@ public class SingleNodePlanner implements SingleNodePlannerIntf {
             && !table.isClusteringColumn(slotDesc.getColumn())
             && slotDesc.getType() == ScalarType.DATE) {
           throw new NotImplementedException(
-              "Scanning DATE values in table '" + table.getFullName() +
+              "Scanning DATE values in table '" + table.getTableName() +
               "' is not supported for fileformat " + ff);
         }
       }

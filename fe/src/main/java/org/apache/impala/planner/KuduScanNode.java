@@ -446,7 +446,7 @@ public class KuduScanNode extends ScanNode {
     result.append(
         String.format(replicaSelectionLeaderOnly_ ? "%s%s:%s [%s%s, LEADER-only]\n" :
                                                     "%s%s:%s [%s%s]\n",
-            prefix, id_.toString(), displayName_, kuduTable_.getFullName(), aliasStr));
+            prefix, id_.toString(), displayName_, kuduTable_.getTableName(), aliasStr));
 
     switch (detailLevel) {
       case MINIMAL: break;

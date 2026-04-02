@@ -69,7 +69,7 @@ public class AlterTableSetCachedStmt extends AlterTableSetStmt {
     Preconditions.checkNotNull(table);
     if (!(table instanceof FeFsTable)) {
       throw new AnalysisException("ALTER TABLE SET [CACHED|UNCACHED] must target an " +
-          "HDFS table: " + table.getFullName());
+          "HDFS table: " + table.getTableName());
     }
 
     if (cacheOp_.shouldCache()) {
@@ -87,10 +87,10 @@ public class AlterTableSetCachedStmt extends AlterTableSetStmt {
         nameSb.append(")");
       } else {
         isCacheable = hdfsTable.isCacheable();
-        nameSb.append("Table ").append(table.getFullName());
+        nameSb.append("Table ").append(table.getTableName());
       }
       if (!isCacheable) {
-        throw new AnalysisException(nameSb.toString() + " cannot be cached. Please " +
+        throw new AnalysisException(nameSb + " cannot be cached. Please " +
             "check if the table or partitions are on a filesystem which supports " +
             "caching.");
       }

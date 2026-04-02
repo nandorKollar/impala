@@ -29,13 +29,11 @@ import org.apache.impala.analysis.Analyzer;
 import org.apache.impala.analysis.TableName;
 import org.apache.impala.catalog.CatalogObject.ThriftObjectType;
 import org.apache.impala.catalog.Column;
-import org.apache.impala.catalog.FeCatalogUtils;
 import org.apache.impala.catalog.FeIcebergTable;
 import org.apache.impala.catalog.FeTable;
 import org.apache.impala.catalog.IcebergColumn;
 import org.apache.impala.catalog.VirtualTable;
 import org.apache.impala.common.ImpalaRuntimeException;
-import org.apache.impala.thrift.TColumnDescriptor;
 import org.apache.impala.thrift.TTableDescriptor;
 import org.apache.impala.thrift.TTableStats;
 import org.apache.impala.thrift.TTableType;
@@ -88,11 +86,6 @@ public class IcebergMetadataTable extends VirtualTable {
     return baseTable_;
   }
 
-  @Override
-  public String getFullName() {
-    return super.getFullName() + "." + metadataTableName_;
-  }
-
   public String getMetadataTableName() {
     return metadataTableName_;
   }
@@ -123,7 +116,7 @@ public class IcebergMetadataTable extends VirtualTable {
   public TTableDescriptor toThriftDescriptor(int tableId,
       Set<Long> referencedPartitions) {
     TTableDescriptor desc = new TTableDescriptor(tableId, TTableType.ICEBERG_TABLE,
-        getTColumnDescriptors(), numClusteringCols_, name_, db_.getName());
+        Column.toTColumnDescriptors(getColumns()), numClusteringCols_, name_, db_.getName());
     desc.setIcebergTable(FeIcebergTable.Utils.getTIcebergTable(baseTable_,
         ThriftObjectType.DESCRIPTOR_ONLY));
     return desc;

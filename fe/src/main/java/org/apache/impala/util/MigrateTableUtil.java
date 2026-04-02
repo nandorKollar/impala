@@ -78,7 +78,7 @@ public class MigrateTableUtil {
       TConvertTableRequest request,
       FeFsTable table,
       TQueryOptions queryOptions) throws ImpalaRuntimeException {
-    LOG.info("Migrating table to Iceberg: " + table.getFullName());
+    LOG.info("Migrating table to Iceberg: " + table.getTableName());
     Schema schema =
         IcebergSchemaConverter.convertToIcebergSchema(table.getMetaStoreTable());
     PartitionSpec spec = IcebergSchemaConverter.createIcebergPartitionSpec(

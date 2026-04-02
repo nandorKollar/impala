@@ -359,7 +359,7 @@ public class DataSourceScanNode extends ScanNode {
   protected String debugString() {
     return MoreObjects.toStringHelper(this)
         .add("tid", desc_.getId().asInt())
-        .add("tblName", table_.getFullName())
+        .add("tblName", table_.getTableName())
         .add("dataSource", DataSource.debugString(table_.getDataSource()))
         .add("initString", table_.getInitString())
         .addValue(super.debugString())
@@ -428,12 +428,12 @@ public class DataSourceScanNode extends ScanNode {
       TExplainLevel detailLevel) {
     StringBuilder output = new StringBuilder();
     String aliasStr = "";
-    if (!table_.getFullName().equalsIgnoreCase(desc_.getAlias()) &&
+    if (!table_.getTableName().fullName().equalsIgnoreCase(desc_.getAlias()) &&
         !table_.getName().equalsIgnoreCase(desc_.getAlias())) {
       aliasStr = " " + desc_.getAlias();
     }
     output.append(String.format("%s%s:%s [%s%s]\n", prefix, id_.toString(),
-        displayName_, table_.getFullName(), aliasStr));
+        displayName_, table_.getTableName().fullName(), aliasStr));
 
     if (acceptedConjuncts_ != null && !acceptedConjuncts_.isEmpty()) {
       output.append(detailPrefix + "data source predicates: "

@@ -358,7 +358,7 @@ public class Analyzer {
       throws AnalysisException {
     if (AcidUtils.isFullAcidTable(table.getMetaStoreTable().getParameters())) {
       throw new AnalysisException(String.format(FULL_TRANSACTIONAL_TABLE_NOT_SUPPORTED,
-          operationStr, table.getFullName()));
+          operationStr, table.getTableName()));
     }
   }
 
@@ -366,7 +366,7 @@ public class Analyzer {
       throws AnalysisException {
     if (AcidUtils.isTransactionalTable(table)) {
       throw new AnalysisException(String.format(TRANSACTIONAL_TABLE_NOT_SUPPORTED,
-          operationStr, table.getFullName()));
+          operationStr, table.getTableName()));
     }
   }
 
@@ -378,7 +378,7 @@ public class Analyzer {
       throws AnalysisException {
     if (MetaStoreUtil.isBucketedTable(table.getMetaStoreTable())) {
       throw new AnalysisException(String.format(BUCKETED_TABLE_NOT_SUPPORTED,
-              table.getFullName()));
+              table.getTableName()));
     }
   }
 
@@ -419,7 +419,7 @@ public class Analyzer {
       if (!MetastoreShim.hasTableCapability(table.getMetaStoreTable(), writeRequires)) {
         // Error messages with explanations.
         throw new AnalysisException(String.format(TABLE_NOT_SUPPORTED, "Write",
-            table.getFullName(),
+            table.getTableName(),
             MetastoreShim.getTableAccessType(table.getMetaStoreTable())));
       }
     } else {
@@ -442,7 +442,7 @@ public class Analyzer {
         // the operations are not supported, we will generate error messages
         // accordingly.
         throw new AnalysisException(String.format(TABLE_NOT_SUPPORTED, "Operations",
-            table.getFullName(),
+            table.getTableName(),
             MetastoreShim.getTableAccessType(table.getMetaStoreTable())));
       }
     } else {
@@ -1601,7 +1601,7 @@ public class Analyzer {
                   timeTravelSpec.getKind() == TimeTravelSpec.Kind.TIME_AS_OF ?
                       "SYSTEM_TIME" :
                       "SYSTEM_VERSION",
-                  tbl.getFullName()));
+                  tbl.getTableName()));
             }
             timeTravelSpec.analyze(this);
 
@@ -3930,7 +3930,7 @@ public class Analyzer {
 
   public org.apache.kudu.client.KuduTable getKuduTable(FeKuduTable feKuduTable)
       throws AnalysisException {
-    String tableName = feKuduTable.getFullName();
+    String tableName = feKuduTable.getTableName().fullName();
 
     // Use the kuduTable from the global state cache if it exists.
     org.apache.kudu.client.KuduTable kuduTable = globalState_.kuduTables.get(tableName);
@@ -4328,11 +4328,11 @@ public class Analyzer {
       FeView view = (FeView) table;
       Preconditions.checkState(!view.isLocalView());
       addAccessEvent(new TAccessEvent(
-          table.getFullName(), TCatalogObjectType.VIEW,
+          table.getTableName().fullName(), TCatalogObjectType.VIEW,
           priv.toString()));
     } else {
       addAccessEvent(new TAccessEvent(
-          table.getFullName(), TCatalogObjectType.TABLE,
+          table.getTableName().fullName(), TCatalogObjectType.TABLE,
           priv.toString()));
     }
     // Add privilege request.

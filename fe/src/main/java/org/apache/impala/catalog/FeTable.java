@@ -18,47 +18,21 @@ package org.apache.impala.catalog;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.hadoop.hive.common.ValidWriteIdList;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.impala.analysis.TableName;
 import org.apache.impala.thrift.TCatalogObjectType;
-import org.apache.impala.thrift.TColumnDescriptor;
 import org.apache.impala.thrift.TImpalaTableType;
 import org.apache.impala.thrift.TTableDescriptor;
 import org.apache.impala.thrift.TTableStats;
-import org.apache.impala.util.AcidUtils;
 
 /**
  * Frontend interface for interacting with a table.
  */
 public interface FeTable {
-  Comparator<FeTable> NAME_COMPARATOR = new Comparator<FeTable>() {
-    @Override
-    public int compare(FeTable t1, FeTable t2) {
-      return t1.getFullName().compareTo(t2.getFullName());
-    }
-  };
-
-  // Internal table property that specifies the number of rows in the table.
-  public static final String NUM_ROWS = "numRows";
-
-  // Internal table property that specifies which user the table was last modified by.
-  public static final String LAST_MODIFIED_BY = "last_modified_by";
-
-  // Internal table property that specifies when the table was last modified.
-  public static final String LAST_MODIFIED_TIME = "last_modified_time";
-
-  // Internal table property that specifies the catalog service id.
-  public static final String CATALOG_SERVICE_ID = "impala.events.catalogServiceId";
-
-  // Internal table property that specifies the catalog version of the table.
-  public static final String CATALOG_VERSION = "impala.events.catalogVersion";
-
   /** @see CatalogObject#isLoaded() */
   boolean isLoaded();
 
@@ -83,11 +57,6 @@ public interface FeTable {
    * @return the short name of this table (e.g. "my_table")
    */
   String getName();
-
-  /**
-   * @return the full name of this table (e.g. "my_db.my_table")
-   */
-  String getFullName();
 
   /**
    * @return the table name in structured form
@@ -145,19 +114,6 @@ public interface FeTable {
    */
   List<Column> getNonClusteringColumns();
 
-  /**
-   * Filter columns not stored in HMS (currently row__id in full ACID tables).
-   */
-  default List<Column> filterColumnsNotStoredInHms(List<Column> columns) {
-    Table tbl = getMetaStoreTable();
-    boolean isFullAcid = tbl != null && AcidUtils.isFullAcidTable(tbl.getParameters());
-    if (!isFullAcid) return columns;
-    // Filter out row__id as it doesn't exist in HMS.
-    return columns.stream()
-        .filter(c -> !c.getName().equals("row__id"))
-        .collect(Collectors.toList());
-  }
-
   int getNumClusteringCols();
 
   boolean isClusteringColumn(Column c);
@@ -201,11 +157,6 @@ public interface FeTable {
   TTableDescriptor toThriftDescriptor(int tableId, Set<Long> referencedPartitions);
 
   /**
-   * @return the write id for this table
-   */
-  long getWriteId();
-
-  /**
    * @return the valid write id list for this table
    */
   ValidWriteIdList getValidWriteIds();
@@ -225,15 +176,4 @@ public interface FeTable {
    * @return the timestamp when the table is last loaded or reloaded in catalogd.
    */
   long getLastLoadedTimeMs();
-
-  /**
-   * Returns a list of thrift column descriptors ordered by position.
-   */
-  default List<TColumnDescriptor> getTColumnDescriptors() {
-    List<TColumnDescriptor> colDescs = new ArrayList<>();
-    for (Column col: getColumns()) {
-      colDescs.add(col.toDescriptor());
-    }
-    return colDescs;
-  }
 }

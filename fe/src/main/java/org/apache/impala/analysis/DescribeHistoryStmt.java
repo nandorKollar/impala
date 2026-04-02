@@ -108,7 +108,7 @@ public class DescribeHistoryStmt extends StatementBase implements SingleTableStm
     Preconditions.checkNotNull(table_);
     if (!(table_ instanceof FeIcebergTable)) {
       throw new AnalysisException(String.format(
-          "DESCRIBE HISTORY must specify an Iceberg table: %s", table_.getFullName()));
+          "DESCRIBE HISTORY must specify an Iceberg table: %s", table_.getTableName()));
     }
     switch (kind_) {
       case FROM:

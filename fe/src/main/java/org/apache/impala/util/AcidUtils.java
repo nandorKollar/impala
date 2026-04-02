@@ -799,7 +799,7 @@ public class AcidUtils {
     List<HdfsPartition.Builder> partBuilders = MetastoreShim
         .getPartitionsForRefreshingFileMetadata(catalog, hdfsTable);
     LOG.debug("Checked the latest compaction id for {}. Time taken: {}",
-        hdfsTable.getFullName(),
+        hdfsTable.getTableName(),
         PrintUtils.printTimeMs(sw.stop().elapsed(TimeUnit.MILLISECONDS)));
     return partBuilders;
   }

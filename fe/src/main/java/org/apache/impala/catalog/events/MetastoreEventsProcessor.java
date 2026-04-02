@@ -477,16 +477,16 @@ public class MetastoreEventsProcessor implements ExternalEventsProcessor {
     Preconditions.checkArgument(tbl != null, "tbl is null");
     Preconditions.checkState(!(tbl instanceof IncompleteTable) &&
         tbl.isLoaded(), "table %s is either incomplete or not loaded",
-        tbl.getFullName());
+        tbl.getTableName());
     Preconditions.checkState(tbl.isWriteLockedByCurrentThread(),
         String.format("Write lock is not held on table %s by current thread",
-            tbl.getFullName()));
+            tbl.getTableName()));
     long lastEventId = tbl.getLastSyncedEventId();
     Preconditions.checkArgument(lastEventId > 0, "lastEvent " +
-        " Id %s for table %s should be greater than 0", lastEventId, tbl.getFullName());
+        " Id %s for table %s should be greater than 0", lastEventId, tbl.getTableName());
 
     String annotation = String.format("sync table %s to latest HMS event id",
-        tbl.getFullName());
+        tbl.getTableName().fullName());
     try(ThreadNameAnnotator tna = new ThreadNameAnnotator(annotation)) {
       MetaDataFilter metaDataFilter;
       // For ACID tables, events may include commit_txn and abort_txn which doesn't have
@@ -503,13 +503,13 @@ public class MetastoreEventsProcessor implements ExternalEventsProcessor {
 
       if (events.isEmpty()) {
         LOG.debug("table {} synced till event id {}. No new HMS events to process from "
-                + "event id: {}", tbl.getFullName(), lastEventId, lastEventId + 1);
+                + "event id: {}", tbl.getTableName(), lastEventId, lastEventId + 1);
         return;
       }
       MetastoreEvents.MetastoreEvent currentEvent = null;
       for (NotificationEvent event : events) {
         currentEvent = eventFactory.get(event, metrics);
-        LOG.trace("for table {}, processing event {}", tbl.getFullName(), currentEvent);
+        LOG.trace("for table {}, processing event {}", tbl.getTableName(), currentEvent);
         currentEvent.processIfEnabled();
         if (currentEvent.isDropEvent()) {
           // currentEvent can only be DropPartition or DropTable
@@ -534,7 +534,7 @@ public class MetastoreEventsProcessor implements ExternalEventsProcessor {
       if (currentEvent.getEventId() > tbl.getLastSyncedEventId()) {
         tbl.setLastSyncedEventId(currentEvent.getEventId());
       }
-      LOG.info("Synced table {} till HMS event:  {}", tbl.getFullName(),
+      LOG.info("Synced table {} till HMS event:  {}", tbl.getTableName(),
           tbl.getLastSyncedEventId());
     }
   }
@@ -2107,14 +2107,14 @@ public class MetastoreEventsProcessor implements ExternalEventsProcessor {
       if (strs.size() < 2) {
         String str = String.join(".", strs);
         LOG.error("Illegal table name found in view {}: {}. View definition:\n{}",
-            view.getFullName(), str, view.getMetaStoreTable().getViewExpandedText());
+            view.getTableName(), str, view.getMetaStoreTable().getViewExpandedText());
         throw new CatalogException(String.format(
-            "Illegal table name found in view %s: %s", view.getFullName(), str));
+            "Illegal table name found in view %s: %s", view.getTableName(), str));
       }
       TTableName name = new TTableName(strs.get(0), strs.get(1));
       if (!checkedNames.contains(name)) {
         uncheckedNames.add(name);
-        LOG.info("Found new table name used by view {}: {}.{}", view.getFullName(),
+        LOG.info("Found new table name used by view {}: {}.{}", view.getTableName(),
             name.db_name, name.table_name);
       }
     }

@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
@@ -167,8 +168,8 @@ public class CopyTestCaseStmt extends StatementBase {
     // Sort the referenced objects for deterministic testcase outputs.
     List<FeDb> referencedDbs = new ArrayList<>(referencedObjects.first);
     List<FeTable> referencedTbls = new ArrayList<>(referencedObjects.second);
-    Collections.sort(referencedDbs, FeDb.NAME_COMPARATOR);
-    Collections.sort(referencedTbls, FeTable.NAME_COMPARATOR);
+    Collections.sort(referencedDbs, Comparator.comparing(FeDb::getName));
+    Collections.sort(referencedTbls, Comparator.comparing((FeTable t) -> t.getTableName().fullName()));
     for (FeDb db: referencedDbs) {
       result.addToDbs(db.toThrift());
     }

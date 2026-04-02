@@ -227,7 +227,7 @@ public class IcebergScanPlanner {
     if (fileStore.hasMissingFile()) {
       throw new ImpalaRuntimeException(String.format("Iceberg table '%s' cannot be" +
           " fully loaded due to unavailable files: %s Check ImpalaD/CatalogD logs for" +
-          " details.", getIceTable().getFullName(), fileStore.getMissingFiles()));
+          " details.", getIceTable().getTableName(), fileStore.getMissingFiles()));
     }
     if (tblRef_.getSelectedDataFilesForOptimize() != null) {
       dataFilesWithoutDeletes_ = tblRef_.getSelectedDataFilesForOptimize();
@@ -672,7 +672,7 @@ public class IcebergScanPlanner {
       }
     } catch (IOException | TableLoadingException e) {
       throw new ImpalaRuntimeException(String.format(
-          "Failed to load data files for Iceberg table: %s", getIceTable().getFullName()),
+          "Failed to load data files for Iceberg table: %s", getIceTable().getTableName()),
           e);
     }
 
@@ -815,7 +815,7 @@ public class IcebergScanPlanner {
       throw new ImpalaRuntimeException(String.format("Cannot find file: %s in" +
           " Iceberg table %s (snapshot id: %d) It's possibly missing from storage." +
           " Check ImpalaD/CatalogD logs for details. List of all missing files: %s",
-          cf.path(), getIceTable().getFullName(), getIceTable().snapshotId(),
+          cf.path(), getIceTable().getTableName(), getIceTable().snapshotId(),
           fileStore.getMissingFiles()));
     }
     // We can still find the file descriptor among the old file descriptors.

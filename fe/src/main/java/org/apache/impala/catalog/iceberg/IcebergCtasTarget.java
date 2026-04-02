@@ -288,7 +288,7 @@ public class IcebergCtasTarget extends CtasTargetTable implements FeIcebergTable
   public TTableDescriptor toThriftDescriptor(int tableId,
       Set<Long> referencedPartitions) {
     TTableDescriptor desc = new TTableDescriptor(tableId, TTableType.ICEBERG_TABLE,
-        getTColumnDescriptors(),
+        Column.toTColumnDescriptors(getColumns()),
         getNumClusteringCols(),
         getName(), db_.getName());
 

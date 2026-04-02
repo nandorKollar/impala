@@ -313,7 +313,7 @@ public class LocalFsTable extends LocalTable implements FeFsTable {
   public TTableDescriptor toThriftDescriptor(int tableId,
       Set<Long> referencedPartitions) {
     TTableDescriptor tableDesc = new TTableDescriptor(tableId, TTableType.HDFS_TABLE,
-        getTColumnDescriptors(),
+        Column.toTColumnDescriptors(getColumns()),
         getNumClusteringCols(), name_, db_.getName());
     tableDesc.setHdfsTable(toTHdfsTable(referencedPartitions,
         ThriftObjectType.DESCRIPTOR_ONLY));
@@ -352,7 +352,7 @@ public class LocalFsTable extends LocalTable implements FeFsTable {
       // Need to infer an Avro schema for the backend to use if any of the
       // referenced partitions are Avro, even if the table is mixed-format.
       hdfsTable.setAvroSchema(AvroSchemaConverter.convertFieldSchemas(
-          getMetaStoreTable().getSd().getCols(), getFullName()).toString());
+          getMetaStoreTable().getSd().getCols(), getTableName().fullName()).toString());
     }
     if (AcidUtils.isFullAcidTable(getMetaStoreTable().getParameters())) {
       hdfsTable.setIs_full_acid(true);
@@ -465,7 +465,7 @@ public class LocalFsTable extends LocalTable implements FeFsTable {
     for (Long id : ids) {
       LocalPartitionSpec spec = partitionSpecs_.get(id);
       Preconditions.checkArgument(spec != null, "Invalid partition ID for table %s: %s",
-          getFullName(), id);
+          getTableName(), id);
       refs.add(Preconditions.checkNotNull(spec.getRef()));
     }
     Map<String, PartitionMetadata> partsByName;
@@ -474,7 +474,7 @@ public class LocalFsTable extends LocalTable implements FeFsTable {
           ref_, getClusteringColumnNames(), hostIndex_, refs);
     } catch (CatalogException | TException e) {
       throw new LocalCatalogException(
-          "Could not load partitions for table " + getFullName(), e);
+          "Could not load partitions for table " + getTableName(), e);
     }
     List<FeFsPartition> ret = Lists.newArrayListWithCapacity(ids.size());
     for (Long id : ids) {
@@ -484,7 +484,7 @@ public class LocalFsTable extends LocalTable implements FeFsTable {
         // TODO(todd): concurrent drop partition could result in this error.
         // Should we recover in a more graceful way from such an unexpected event?
         throw new LocalCatalogException(
-            "Could not load expected partitions for table " + getFullName() +
+            "Could not load expected partitions for table " + getTableName() +
             ": missing expected partition with name '" + spec.getRef().getName() +
             "' (perhaps it was concurrently dropped by another process)");
       }
@@ -554,7 +554,7 @@ public class LocalFsTable extends LocalTable implements FeFsTable {
       partList = db_.getCatalog().getMetaProvider().loadPartitionList(ref_);
     } catch (TException e) {
       throw new LocalCatalogException("Could not load partition names for table " +
-          getFullName(), e);
+              getTableName(), e);
     }
     ImmutableMap.Builder<Long, LocalPartitionSpec> b = new ImmutableMap.Builder<>();
     long id = 0;
@@ -608,7 +608,7 @@ public class LocalFsTable extends LocalTable implements FeFsTable {
       loadConstraints();
     } catch (TException e) {
       throw new LocalCatalogException("Failed to load primary keys/foreign keys for "
-          + "table " + getFullName(), e);
+          + "table " + getTableName(), e);
     }
     return sqlConstraints_;
   }

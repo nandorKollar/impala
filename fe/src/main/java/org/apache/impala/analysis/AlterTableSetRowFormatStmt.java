@@ -64,12 +64,12 @@ public class AlterTableSetRowFormatStmt extends AlterTableSetStmt {
     FeTable tbl = getTargetTable();
     if (!(tbl instanceof FeFsTable)) {
       throw new AnalysisException(String.format("ALTER TABLE SET ROW FORMAT is only " +
-          "supported on HDFS tables. Conflicting table: %1$s", tbl.getFullName()));
+          "supported on HDFS tables. Conflicting table: %1$s", tbl.getTableName()));
     }
 
     if (tbl instanceof FeIcebergTable) {
       throw new AnalysisException("ALTER TABLE SET ROWFORMAT is not supported " +
-          "on Iceberg tables: " + tbl.getFullName());
+          "on Iceberg tables: " + tbl.getTableName());
     }
 
     if (partitionSet_ != null) {
@@ -83,14 +83,14 @@ public class AlterTableSetRowFormatStmt extends AlterTableSetStmt {
         }
       }
     } else {
-      StorageDescriptor sd = ((FeFsTable) tbl).getMetaStoreTable().getSd();
+      StorageDescriptor sd = tbl.getMetaStoreTable().getSd();
       HdfsFileFormat format = HdfsFileFormat.fromHdfsInputFormatClass(
           sd.getInputFormat(), sd.getSerdeInfo().getSerializationLib());
       if (format != HdfsFileFormat.TEXT &&
           format != HdfsFileFormat.SEQUENCE_FILE) {
         throw new AnalysisException(String.format("ALTER TABLE SET ROW FORMAT is " +
             "only supported on TEXT or SEQUENCE file formats. Conflicting " +
-            "table/format: %1$s / %2$s", tbl.getFullName(), format.name()));
+            "table/format: %1$s / %2$s", tbl.getTableName(), format.name()));
       }
     }
   }

@@ -142,7 +142,7 @@ public class TableLoader {
         // expects current thread to have write lock on the table
         if (!catalog_.tryWriteLock(table, catalogTimeline)) {
           throw new CatalogException("Couldn't acquire write lock on new table object"
-              + " created when doing a full table reload of " + table.getFullName());
+              + " created when doing a full table reload of " + table.getTableName());
         }
         catalog_.getLock().writeLock().unlock();
         try {
@@ -150,7 +150,7 @@ public class TableLoader {
               getCurrentNotificationEventId().getEventId();
         } catch (TException e) {
           throw new TableLoadingException("Failed to get latest event id from HMS "
-              + "while loading table: " + table.getFullName(), e);
+              + "while loading table: " + table.getTableName(), e);
         }
       }
       table.load(false, msClient.getHiveClient(), msTbl, reason, catalogTimeline);
@@ -158,7 +158,7 @@ public class TableLoader {
       if (syncToLatestEventId) {
         LOG.debug("After full reload, table {} is synced atleast till event id {}. "
                 + "Checking if there are more events generated for this table "
-                + "while the full reload was in progress", table.getFullName(),
+                + "while the full reload was in progress", table.getTableName(),
             latestEventId);
         table.setLastSyncedEventId(latestEventId);
         // write lock is not required since it is full table reload

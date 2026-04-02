@@ -19,6 +19,7 @@ package org.apache.impala.catalog;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.hadoop.hive.metastore.api.ColumnStatisticsData;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
@@ -28,6 +29,7 @@ import org.apache.impala.common.ImpalaRuntimeException;
 import org.apache.impala.thrift.TColumn;
 import org.apache.impala.thrift.TColumnDescriptor;
 import org.apache.impala.thrift.TColumnStats;
+import org.apache.impala.util.AcidUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -154,7 +156,32 @@ public class Column {
     for (Column col: columns) colNames.add(col.getName());
     return colNames;
   }
-  /**
+
+    /**
+     * Filter columns not stored in HMS (currently row__id in full ACID tables).
+     */
+    public static List<Column> filterColumnsNotStoredInHms(org.apache.hadoop.hive.metastore.api.Table tbl, List<Column> columns) {
+        boolean isFullAcid = tbl != null && AcidUtils.isFullAcidTable(tbl.getParameters());
+        if (!isFullAcid) return columns;
+        // Filter out row__id as it doesn't exist in HMS.
+        return columns.stream()
+                .filter(c -> !c.getName().equals("row__id"))
+                .collect(Collectors.toList());
+    }
+
+
+    /**
+     * Returns a list of thrift column descriptors ordered by position.
+     */
+    public static List<TColumnDescriptor> toTColumnDescriptors(List<Column> columns) {
+        List<TColumnDescriptor> colDescs = new ArrayList<>();
+        for (Column col: columns) {
+            colDescs.add(col.toDescriptor());
+        }
+        return colDescs;
+    }
+
+    /**
    * Returns a struct type from the table columns passed in as a parameter.
    */
   public static StructType columnsToStruct(List<Column> columns) {

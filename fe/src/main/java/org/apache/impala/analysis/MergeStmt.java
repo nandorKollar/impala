@@ -83,7 +83,7 @@ public class MergeStmt extends DmlStatementBase {
         setMaxTableSinks(analyzer_.getQueryOptions().getMax_fs_writers());
       } else {
         throw new AnalysisException(String.format(
-            "Target table must be an Iceberg table: %s", table_.getFullName()));
+            "Target table must be an Iceberg table: %s", table_.getTableName()));
       }
     }
 

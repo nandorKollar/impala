@@ -68,7 +68,7 @@ public class LocalHbaseTable extends LocalTable implements FeHBaseTable {
       Set<Long> referencedPartitions) {
     TTableDescriptor tableDescriptor =
         new TTableDescriptor(tableId, TTableType.HBASE_TABLE,
-            getTColumnDescriptors(), 1, getHBaseTableName(),
+            Column.toTColumnDescriptors(getColumns()), 1, getHBaseTableName(),
             db_.getName());
     tableDescriptor.setHbaseTable(Util.getTHBaseTable(this));
     return tableDescriptor;

@@ -265,7 +265,7 @@ public class AlterTableSetTblProperties extends AlterTableSetStmt {
     avroSchema = Strings.nullToEmpty(avroSchema);
     if (avroSchema.isEmpty()) {
       throw new AnalysisException("Avro schema is null or empty: " +
-          table_.getFullName());
+          table_.getTableName());
     }
 
     // Check if the schema is valid and is supported by Impala
@@ -273,7 +273,7 @@ public class AlterTableSetTblProperties extends AlterTableSetStmt {
       AvroSchemaParser.parse(avroSchema);
     } catch (SchemaParseException e) {
       throw new AnalysisException(String.format(
-          "Error parsing Avro schema for table '%s': %s", table_.getFullName(),
+          "Error parsing Avro schema for table '%s': %s", table_.getTableName(),
           e.getMessage()));
     }
   }
@@ -293,7 +293,7 @@ public class AlterTableSetTblProperties extends AlterTableSetStmt {
     if (!(tbl instanceof FeFsTable)) {
       throw new AnalysisException(
           String.format("Property 'serialization.encoding' is only supported "
-                  + "on HDFS tables. Conflicting table: %s", tbl.getFullName()));
+                  + "on HDFS tables. Conflicting table: %s", tbl.getTableName()));
     }
 
     if (partitionSet_ != null) {
@@ -313,7 +313,7 @@ public class AlterTableSetTblProperties extends AlterTableSetStmt {
         throw new AnalysisException(String.format("Property 'serialization.encoding' "
                 + "is only supported on TEXT file format. Conflicting "
                 + "table/format: %s %s",
-            tbl.getFullName(), format.name()));
+            tbl.getTableName(), format.name()));
       }
     }
 
@@ -342,7 +342,7 @@ public class AlterTableSetTblProperties extends AlterTableSetStmt {
         hdfsSD = HdfsStorageDescriptor.fromStorageDescriptor(tbl.getName(), sd);
       } catch (HdfsStorageDescriptor.InvalidStorageDescriptorException e) {
         throw new LocalCatalogException(String.format(
-            "Invalid input format descriptor for table %s", table_.getFullName()), e);
+            "Invalid input format descriptor for table %s", table_.getTableName()), e);
       }
       if (!isLineDelimiterSameAsAscii(hdfsSD.getLineDelim(), charset)) {
         throw new AnalysisException(String.format(
@@ -350,7 +350,7 @@ public class AlterTableSetTblProperties extends AlterTableSetStmt {
             "encodings in which line delimiter is compatible with ASCII. " +
             "Conflicting table: %1$s. " +
             "Please refer to IMPALA-10319 for more info.",
-            table_.getFullName()));
+            table_.getTableName()));
       }
     }
   }

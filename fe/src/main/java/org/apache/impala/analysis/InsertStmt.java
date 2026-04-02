@@ -456,7 +456,7 @@ public class InsertStmt extends DmlStatementBase {
     if (table_ instanceof FeView || table_ instanceof MaterializedViewHdfsTable) {
       throw new AnalysisException(
           String.format("Impala does not support %sing into views: %s", getOpName(),
-              table_.getFullName()));
+              table_.getTableName()));
     }
 
     Analyzer.ensureTableNotFullAcid(table_, "INSERT");
@@ -584,7 +584,7 @@ public class InsertStmt extends DmlStatementBase {
             Sets.difference(formats, HdfsTableSink.SUPPORTED_FILE_FORMATS);
         if (!unsupportedFormats.isEmpty()) {
           throw new AnalysisException(String.format("Destination table '" +
-              fsTable.getFullName() + "' contains partition format(s) that are not " +
+              fsTable.getTableName() + "' contains partition format(s) that are not " +
               "supported to write: '" + Joiner.on(',').join(unsupportedFormats) + "', " +
               "dynamic partition clauses are forbidden."));
         }
@@ -621,7 +621,7 @@ public class InsertStmt extends DmlStatementBase {
 
     if (table_ instanceof FePaimonTable) {
       throw new AnalysisException(String.format(
-          "Impala does not support INSERT into PAIMON table: %s", table_.getFullName()));
+          "Impala does not support INSERT into PAIMON table: %s", table_.getTableName()));
     }
   }
 
@@ -645,7 +645,7 @@ public class InsertStmt extends DmlStatementBase {
       List<TableRef> tblRefs = queryStmt_.collectTableRefs();
       List<String> sourceTableAliases = tblRefs.size() <= 0 ? new ArrayList(0) :
           Arrays.asList(tblRefs.get(0).getAliases());
-      String targetTableName = iceTable.getFullName();
+      String targetTableName = iceTable.getTableName().toString();
       if (!(tblRefs.size() == 1 && sourceTableAliases.contains(targetTableName))) {
         throw new AnalysisException("The Iceberg table has BUCKET partitioning and " +
             "the source table does not match the target table. This means the " +
@@ -736,7 +736,7 @@ public class InsertStmt extends DmlStatementBase {
         int totalColumnsMentioned = numSelectListExprs + numStaticPartitionExprs;
         throw new AnalysisException(String.format(
             "Target table '%s' has %s columns (%s) than the SELECT / VALUES clause %s" +
-            " (%s)", table_.getFullName(), comparator,
+            " (%s)", table_.getTableName(), comparator,
             table_.getColumns().size(), partitionClause, totalColumnsMentioned));
       } else {
         String partitionPrefix =

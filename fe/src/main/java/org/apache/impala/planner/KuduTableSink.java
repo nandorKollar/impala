@@ -81,7 +81,7 @@ public class KuduTableSink extends TableSink {
   public void appendSinkExplainString(String prefix, String detailPrefix,
       TQueryOptions queryOptions, TExplainLevel explainLevel, StringBuilder output) {
     output.append(prefix + sinkOp_.toExplainString());
-    output.append(" KUDU [" + targetTable_.getFullName() + "]\n");
+    output.append(" KUDU [" + targetTable_.getTableName() + "]\n");
     if (explainLevel.ordinal() >= TExplainLevel.EXTENDED.ordinal()) {
       output.append(detailPrefix + "output exprs: ")
           .append(Expr.getExplainString(outputExprs_, explainLevel) + "\n");

@@ -50,19 +50,7 @@ import org.apache.impala.common.Pair;
 import org.apache.impala.common.RuntimeEnv;
 import org.apache.impala.compat.MetastoreShim;
 import org.apache.impala.service.MetadataOp;
-import org.apache.impala.thrift.TAccessLevel;
-import org.apache.impala.thrift.TCatalogObject;
-import org.apache.impala.thrift.TCatalogObjectType;
-import org.apache.impala.thrift.TColumn;
-import org.apache.impala.thrift.TGetPartialCatalogObjectRequest;
-import org.apache.impala.thrift.TGetPartialCatalogObjectResponse;
-import org.apache.impala.thrift.TImpalaTableType;
-import org.apache.impala.thrift.TPartialTableInfo;
-import org.apache.impala.thrift.TTable;
-import org.apache.impala.thrift.TTableDescriptor;
-import org.apache.impala.thrift.TTableInfoSelector;
-import org.apache.impala.thrift.TTableStats;
-import org.apache.impala.thrift.TTableType;
+import org.apache.impala.thrift.*;
 import org.apache.impala.util.AcidUtils;
 import org.apache.impala.util.EventSequence;
 import org.apache.impala.util.HdfsCachingUtil;
@@ -88,7 +76,6 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
   protected org.apache.hadoop.hive.metastore.api.Table msTable_;
   protected final Db db_;
   protected final String name_;
-  protected final String full_name_;
   protected final String owner_;
   protected TAccessLevel accessLevel_ = TAccessLevel.READ_WRITE;
   // Lock protecting this table. A read lock must be held when we are serializing
@@ -229,7 +216,6 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
     msTable_ = msTable;
     db_ = db;
     name_ = name.toLowerCase();
-    full_name_ = (db_ != null ? db_.getName() + "." : "") + name_;
     owner_ = owner;
     tableStats_ = new TTableStats(-1);
     tableStats_.setTotal_file_bytes(-1);
@@ -254,7 +240,7 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
     }
     createEventId_ = eventId;
     if (!suppressLogging) {
-      LOG.debug("createEventId_ for table: {} set to: {}", getFullName(), createEventId_);
+      LOG.debug("createEventId_ for table: {} set to: {}", getTableName(), createEventId_);
     }
     // Don't need to sync table from events older than create event id.
     if (lastSyncedEventId_ < eventId) {
@@ -273,7 +259,7 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
   public void setLastSyncedEventId(long eventId, boolean suppressLogging) {
     // TODO: Add a preconditions check for eventId >= createEventId_
     if (!suppressLogging) {
-      LOG.debug("lastSyncedEventId_ for table: {} set from {} to {}", getFullName(),
+      LOG.debug("lastSyncedEventId_ for table: {} set from {} to {}", getTableName(),
           lastSyncedEventId_, eventId);
     }
     lastSyncedEventId_ = eventId;
@@ -494,7 +480,7 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
   // stats. This method allows each table type to volunteer the set of columns we should
   // ask the metastore for in loadAllColumnStats().
   protected List<String> getColumnNamesWithHmsStats() {
-    List<Column> columns = filterColumnsNotStoredInHms(getColumns());
+    List<Column> columns = Column.filterColumnsNotStoredInHms(getMetaStoreTable(), getColumns());
     return columns.stream()
         .map(col->col.getName().toLowerCase())
         .collect(Collectors.toList());
@@ -526,7 +512,7 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
         //       At least during testing it would be good to treat this as error, but
         //       it is hard to report this well if the function is called during
         //       HMS event processing.
-        LOG.warn("Could not load column statistics for: " + getFullName(), e);
+        LOG.warn("Could not load column statistics for: " + getTableName(), e);
         return;
       }
       FeCatalogUtils.injectColumnStats(colStats, this, testStats_);
@@ -707,7 +693,7 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
     if (!storedInImpaladCatalogCache_ && !isLockedByCurrentThread()) {
       throw new IllegalStateException(
           "Table.toThrift() called without holding the table lock: " +
-              getFullName() + " " + getClass().getName());
+              getTableName() + " " + getClass().getName());
     }
 
     TTable table = new TTable(db_.getName(), name_);
@@ -815,7 +801,7 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
    */
   public TGetPartialCatalogObjectResponse getPartialInfo(
       TGetPartialCatalogObjectRequest req) throws CatalogException {
-    Preconditions.checkState(isLoaded(), "unloaded table: %s", getFullName());
+    Preconditions.checkState(isLoaded(), "unloaded table: %s", getTableName());
     TTableInfoSelector selector = Preconditions.checkNotNull(req.table_info_selector,
         "no table_info_selector");
 
@@ -887,9 +873,6 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
   public String getName() { return name_; }
 
   @Override // FeTable
-  public String getFullName() { return full_name_; }
-
-  @Override // FeTable
   public TableName getTableName() {
     return new TableName(db_ != null ? db_.getName() : null, name_);
   }
@@ -924,7 +907,7 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
   @Override // FeTable
   public List<Column> getColumnsInHiveOrder() {
     List<Column> columns = Lists.newArrayList(getNonClusteringColumns());
-    columns = filterColumnsNotStoredInHms(columns);
+    columns = Column.filterColumnsNotStoredInHms(getMetaStoreTable(), columns);
     columns.addAll(getClusteringColumns());
     return Collections.unmodifiableList(columns);
   }
@@ -951,7 +934,7 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
   @Override // FeTable
   public String getOwnerUser() {
     if (msTable_ == null) {
-      LOG.warn("Owner of {} is unknown due to table is unloaded", getFullName());
+      LOG.warn("Owner of {} is unknown due to table is unloaded", getTableName());
       return null;
     }
     return MetastoreShim.getTableOwnerType(msTable_) == PrincipalType.USER ?
@@ -1005,7 +988,7 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
         // this resets caching for the table though
         LOG.error(
             String.format("Cache directive %d was not found, uncache the table %s " +
-                "to remove this message.", cacheDirId, getFullName()));
+                "to remove this message.", cacheDirId, getTableName()));
         cacheDirId = null;
       }
     }
@@ -1018,13 +1001,13 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
    * cases where truly unique table objects are needed.
    */
   @Override
-  public int hashCode() { return getFullName().hashCode(); }
+  public int hashCode() { return getTableName() .hashCode(); }
 
   @Override
   public boolean equals(Object obj) {
     if (obj == null) return false;
     if (!(obj instanceof Table)) return false;
-    return getFullName().equals(((Table) obj).getFullName());
+    return getTableName().fullName().equals(((Table) obj).getTableName().fullName());
   }
 
   /**
@@ -1087,17 +1070,12 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
       if (!added) {
         LOG.warn(String.format("Could not add %s version to the table %s. This could "
             + "cause unnecessary refresh of the table when the event is received by the "
-                + "Events processor.", versionNumber, getFullName()));
+                + "Events processor.", versionNumber, getTableName()));
       } else {
         metrics_.getCounter(NUMBER_OF_INFLIGHT_EVENTS).inc();
       }
     }
     return added;
-  }
-
-  @Override
-  public long getWriteId() {
-    return MetastoreShim.getWriteIdFromMSTable(msTable_);
   }
 
   @Override
@@ -1130,7 +1108,7 @@ public abstract class Table extends CatalogObjectImpl implements FeTable {
     if (eventId > lastRefreshEventId_) {
       lastRefreshEventId_ = eventId;
     }
-    LOG.info("last refreshed event id for table: {} set to: {}", getFullName(),
+    LOG.info("last refreshed event id for table: {} set to: {}", getTableName(),
         lastRefreshEventId_);
     // TODO: Should we reset lastSyncedEvent Id if it is less than event Id?
     // If we don't reset it - we may start syncing table from an event id which

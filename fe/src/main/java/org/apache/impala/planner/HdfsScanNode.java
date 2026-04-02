@@ -547,7 +547,7 @@ public class HdfsScanNode extends ScanNode {
         throw new ImpalaRuntimeException(String.format("Invalid serde property " +
             "'%s' for scanning binary column of json table '%s'%s. Valid values are " +
             "'base64' or 'rawstring'.",
-            HdfsStorageDescriptor.JSON_BINARY_FORMAT, tbl_.getFullName(),
+            HdfsStorageDescriptor.JSON_BINARY_FORMAT, tbl_.getTableName(),
             partition.getPartitionName().isEmpty() ? "" :
             " partition '" + partition.getPartitionName() + "'"));
       }
@@ -559,7 +559,7 @@ public class HdfsScanNode extends ScanNode {
         throw new ImpalaRuntimeException(String.format("No valid serde properties " +
             "'%s' or query option 'json_binary_format' ('base64' or 'rawstring') " +
             "provided for scanning binary column of json table '%s'%s.",
-            HdfsStorageDescriptor.JSON_BINARY_FORMAT, tbl_.getFullName(),
+            HdfsStorageDescriptor.JSON_BINARY_FORMAT, tbl_.getTableName(),
             partition.getPartitionName().isEmpty() ? "" :
             " partition '" + partition.getPartitionName() + "'"));
       }
@@ -1756,7 +1756,7 @@ public class HdfsScanNode extends ScanNode {
             totalNodes * maxInstancesPerNode);
         LOG.info(String.format("Planner running in DEBUG mode. ScanNode: %s, "
                 + "TotalNodes %d, TotalInstances %d Local Ranges %d",
-            tbl_.getFullName(), totalNodes, totalInstances, numLocalRanges));
+            tbl_.getTableName(), totalNodes, totalInstances, numLocalRanges));
       } else {
         for (TScanRangeLocationList range : scanRangeSpecs_.concrete_ranges) {
           boolean anyLocal = false;
