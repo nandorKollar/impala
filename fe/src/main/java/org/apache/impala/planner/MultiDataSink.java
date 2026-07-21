@@ -17,7 +17,6 @@
 
 package org.apache.impala.planner;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.impala.analysis.Expr;
@@ -37,10 +36,28 @@ import com.google.common.base.Preconditions;
  * subset of columns than other data sinks. One example is Iceberg UPDATEs, which
  * insert records to data files and delete files simultaneously.
  */
-public class MultiDataSink extends DataSink {
-  protected List<DataSink> dataSinks_ = new ArrayList<>();
+public class MultiDataSink extends DataSink implements InstanceCountProvidingSink {
+  protected final List<DataSink> dataSinks_;
 
-  public MultiDataSink() {}
+  public MultiDataSink(DataSink... sinks) {
+    dataSinks_ = List.of(sinks);
+  }
+
+  /**
+   * Returns the capped number of instances by delegating to child sinks that implement
+   * InstanceCountProvidingSink. Returns the minimum across all such children, or the
+   * plan root's instance count if none do.
+   */
+  @Override
+  public int getNumInstances() {
+    int numInstances = getFragment().getPlanRoot().getNumInstances();
+    for (DataSink sink : dataSinks_) {
+      if (sink instanceof InstanceCountProvidingSink icpSink) {
+        numInstances = Math.min(numInstances, icpSink.getNumInstances());
+      }
+    }
+    return numInstances;
+  }
 
   /**
    * This must be called after all child sinks have been added.
@@ -51,12 +68,6 @@ public class MultiDataSink extends DataSink {
     for (DataSink tsink : dataSinks_) {
       tsink.setFragment(fragment);
     }
-  }
-
-  // The real table sink should be added as the first element, before the virtual tables
-  // This order is maintained to conveniently retrieve the actual table name
-  public void addDataSink(DataSink tsink) {
-    dataSinks_.add(tsink);
   }
 
   @Override
@@ -104,17 +115,16 @@ public class MultiDataSink extends DataSink {
 
   @Override
   protected String getLabelDetail() {
-    // We expect the the real table's sink to be the first element.
+    // We expect the real table's sink to be the first element.
     // To maintain this order, a comment as been added above the statements
     // generating this list.
     Preconditions.checkElementIndex(0, dataSinks_.size());
-    return ((TableSink)dataSinks_.get(0)).getLabelDetail();
+    return dataSinks_.get(0).getLabelDetail();
   }
 
   @Override
   protected void toThriftImpl(TDataSink tdsink) {
-    for (int i = 0; i < dataSinks_.size(); ++i) {
-      DataSink dsink = dataSinks_.get(i);
+    for (DataSink dsink : dataSinks_) {
       tdsink.addToChild_data_sinks(dsink.toThrift());
     }
   }
@@ -126,8 +136,7 @@ public class MultiDataSink extends DataSink {
 
   @Override
   public void collectExprsForLineage(List<Expr> exprs) {
-    for (int i = 0; i < dataSinks_.size(); ++i) {
-      DataSink dsink = dataSinks_.get(i);
+    for (DataSink dsink : dataSinks_) {
       dsink.collectExprsForLineage(exprs);
     }
   }

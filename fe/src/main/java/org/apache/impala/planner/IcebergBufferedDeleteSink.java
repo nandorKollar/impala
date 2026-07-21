@@ -39,28 +39,37 @@ import org.apache.impala.thrift.TTableSinkType;
 import java.util.List;
 import org.apache.impala.util.Hash128;
 
-public class IcebergBufferedDeleteSink extends TableSink {
+public class IcebergBufferedDeleteSink extends TableSink
+  implements InstanceCountProvidingSink {
 
   private final int deleteTableId_;
+
+  // Upper limit on the number of sink instances imposed by MAX_FS_WRITERS.
+  private final int maxTableSinks_;
 
   // Exprs for computing the output partition(s).
   protected final List<Expr> partitionKeyExprs_;
   protected final Map<Hash128, TIcebergDeletionVector> referencedDVs_;
 
   public IcebergBufferedDeleteSink(FeIcebergTable targetTable,
-      List<Expr> partitionKeyExprs, List<Expr> outputExprs) {
-    this(targetTable, partitionKeyExprs, outputExprs, 0);
-  }
-
-  public IcebergBufferedDeleteSink(FeIcebergTable targetTable,
       List<Expr> partitionKeyExprs, List<Expr> outputExprs,
-      int deleteTableId) {
+      int deleteTableId, int maxTableSinks) {
     super(targetTable, Op.DELETE, outputExprs);
     Preconditions.checkState(targetTable instanceof IcebergDeleteTable);
     FeIcebergTable originalTable = ((IcebergDeleteTable) targetTable).getBaseTable();
     referencedDVs_ = originalTable.getContentFileStore().getDataFileToDV();
     partitionKeyExprs_ = partitionKeyExprs;
     deleteTableId_ = deleteTableId;
+    maxTableSinks_ = maxTableSinks;
+  }
+
+  @Override
+  public int getNumInstances() {
+    int numInstances = getFragment().getPlanRoot().getNumInstances();
+    if (maxTableSinks_ > 0) {
+      numInstances = Math.min(numInstances, maxTableSinks_);
+    }
+    return numInstances;
   }
 
   @Override

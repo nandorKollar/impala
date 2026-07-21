@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
  *
  * TODO(vercegovac): rename to FsTableSink
  */
-public class HdfsTableSink extends TableSink {
+public class HdfsTableSink extends TableSink implements InstanceCountProvidingSink {
   private final static Logger LOG = LoggerFactory.getLogger(HdfsTableSink.class);
 
   // The name of the table property that sets the parameters of writing Parquet Bloom
@@ -76,7 +76,7 @@ public class HdfsTableSink extends TableSink {
   // column stats.
   protected final long DEFAULT_NUM_PARTITIONS = 10;
 
-  // Coefficiencts for estimating insert CPU processing cost. Derived from benchmarking.
+  // Coefficients for estimating insert CPU processing cost. Derived from benchmarking.
   // Cost per byte for Parquet inserts
   private static final double COST_COEFFICIENT_PARQUET_BYTES_INSERTED = 0.1170;
   // Fixed cost for Parquet inserts
@@ -414,6 +414,7 @@ public class HdfsTableSink extends TableSink {
    * will run on. This is based on the number of instances set for the plan root
    * and has an upper limit set by the MAX_FS_WRITERS query option.
    */
+  @Override
   public int getNumInstances() {
     int num_instances = getFragment().getPlanRoot().getNumInstances();
     if (maxHdfsSinks_ > 0) {
@@ -441,7 +442,7 @@ public class HdfsTableSink extends TableSink {
     Preconditions.checkArgument(inputCardinality >= 0);
     Preconditions.checkArgument(avgRowSize >= 0);
     if (inputCardinality == 0) return 1;
-    long byteBasedNumWriters = (long) Math.round(
+    long byteBasedNumWriters = Math.round(
         (avgRowSize / HdfsTableSink.MIN_WRITE_BYTES) * inputCardinality);
 
     if (isPartitioned && totalNumPartitions > 0) {
