@@ -43,7 +43,7 @@ import org.apache.impala.analysis.TableRef;
 import org.apache.impala.analysis.TableSampleClause;
 import org.apache.impala.analysis.TupleDescriptor;
 import org.apache.impala.catalog.FeFsPartition;
-import org.apache.impala.catalog.FeFsTable;
+import org.apache.impala.catalog.FeScannable;
 import org.apache.impala.catalog.PrunablePartition;
 import org.apache.impala.common.AnalysisException;
 import org.apache.impala.common.ImpalaException;
@@ -85,7 +85,7 @@ public class HdfsPartitionPruner {
   // Partition batch size used during partition pruning.
   private final static int PARTITION_PRUNING_BATCH_SIZE = 1024;
 
-  private final FeFsTable tbl_;
+  private final FeScannable tbl_;
   private final List<SlotId> partitionSlots_;
 
   // For converting BetweenPredicates to CompoundPredicates so they can be
@@ -96,8 +96,8 @@ public class HdfsPartitionPruner {
                         FoldConstantsRule.INSTANCE)));
 
   public HdfsPartitionPruner(TupleDescriptor tupleDesc) {
-    Preconditions.checkState(tupleDesc.getTable() instanceof FeFsTable);
-    tbl_ = (FeFsTable)tupleDesc.getTable();
+    Preconditions.checkState(tupleDesc.getTable() instanceof FeScannable);
+    tbl_ = (FeScannable)tupleDesc.getTable();
     partitionSlots_ = tupleDesc.getPartitionSlots();
 
   }

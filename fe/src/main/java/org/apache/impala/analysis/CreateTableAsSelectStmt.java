@@ -26,6 +26,7 @@ import java.util.Set;
 import org.apache.impala.authorization.Privilege;
 import org.apache.impala.catalog.FeDb;
 import org.apache.impala.catalog.FeFsTable;
+import org.apache.impala.catalog.FeIcebergTable;
 import org.apache.impala.catalog.FeKuduTable;
 import org.apache.impala.catalog.FeTable;
 import org.apache.impala.catalog.HdfsFileFormat;
@@ -253,10 +254,11 @@ public class CreateTableAsSelectStmt extends StatementBase {
         tmpTable = db.createFsCtasTarget(msTbl);
       }
       Preconditions.checkState(tmpTable != null &&
-          (tmpTable instanceof FeFsTable || tmpTable instanceof FeKuduTable));
+          (tmpTable instanceof FeFsTable || tmpTable instanceof FeIcebergTable
+          || tmpTable instanceof FeKuduTable));
 
       insertStmt_.setTargetTable(tmpTable);
-      if (tmpTable instanceof FeFsTable) {
+      if (tmpTable instanceof FeFsTable || tmpTable instanceof FeIcebergTable) {
         insertStmt_.setMaxTableSinks(analyzer_.getQueryOptions().getMax_fs_writers());
       }
     } catch (Exception e) {

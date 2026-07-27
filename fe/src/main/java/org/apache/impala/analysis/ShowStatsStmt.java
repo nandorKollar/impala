@@ -127,7 +127,7 @@ public class ShowStatsStmt extends StatementBase implements SingleTableStmt {
       throw new AnalysisException(String.format(
           "%s not applicable to a view: %s", getSqlPrefix(), table_.getFullName()));
     }
-    if (table_ instanceof FeFsTable) {
+    if (table_ instanceof FeFsTable || table_ instanceof FeIcebergTable) {
       // There two cases here: Non-partitioned hdfs table and non-partitioned
       // iceberg table
       boolean partitioned = true;
@@ -188,7 +188,7 @@ public class ShowStatsStmt extends StatementBase implements SingleTableStmt {
    * the filtered partition IDs.
    */
   private void analyzeWhereClause(Analyzer analyzer) throws AnalysisException {
-    if (!(table_ instanceof FeFsTable)) {
+    if (!(table_ instanceof FeFsTable) && !(table_ instanceof FeIcebergTable)) {
       throw new AnalysisException(
         "WHERE clause in SHOW PARTITIONS is only supported for HDFS and Iceberg tables");
     }

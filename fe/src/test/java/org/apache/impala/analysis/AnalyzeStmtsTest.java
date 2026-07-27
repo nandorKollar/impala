@@ -2096,7 +2096,7 @@ public class AnalyzeStmtsTest extends AnalyzerTest {
         // Table hints not supported for HBase tables
         AnalyzesOk(String.format("select * from functional_hbase.alltypes %s " +
               "%sschedule_random_replica%s", alias, prefix, suffix),
-            "Table hints only supported for Hdfs/Kudu tables");
+            "Table hints only supported for Hdfs/Kudu/Iceberg tables.");
         // Table hints not supported for catalog views
         AnalyzesOk(String.format("select * from functional.alltypes_view %s " +
               "%sschedule_random_replica%s", alias, prefix, suffix),

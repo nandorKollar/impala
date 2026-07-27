@@ -34,6 +34,7 @@ import org.apache.hadoop.hive.metastore.api.SQLPrimaryKey;
 import org.apache.impala.authorization.Privilege;
 import org.apache.impala.catalog.Column;
 import org.apache.impala.catalog.FeFsTable;
+import org.apache.impala.catalog.FeIcebergTable;
 import org.apache.impala.catalog.FeTable;
 import org.apache.impala.catalog.HdfsStorageDescriptor;
 import org.apache.impala.catalog.RowFormat;
@@ -731,7 +732,8 @@ class TableDef {
    */
   public static List<Integer> analyzeSortColumns(List<String> sortCols, FeTable table,
       TSortingOrder sortingOrder) throws AnalysisException {
-    Preconditions.checkState(table instanceof FeFsTable);
+    Preconditions.checkState(table instanceof FeFsTable
+        || table instanceof FeIcebergTable);
 
     List<Type> columnTypes = table.getNonClusteringColumns().stream().map(
         col -> col.getType()).collect(Collectors.toList());

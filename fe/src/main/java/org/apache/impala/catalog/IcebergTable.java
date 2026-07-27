@@ -274,7 +274,8 @@ public class IcebergTable extends Table implements FeIcebergTable {
   private Map<Integer, IcebergColumn> icebergFieldIdToCol_;
   private Map<String, TIcebergPartitionStats> partitionStats_;
 
-  private final FileMetadataStats fileMetadataStats_ = new FileMetadataStats();
+  private final FeFsTable.FileMetadataStats fileMetadataStats_ =
+      new FeFsTable.FileMetadataStats();
 
   protected IcebergTable(org.apache.hadoop.hive.metastore.api.Table msTable,
       Db db, String name, String owner) {
@@ -471,19 +472,19 @@ public class IcebergTable extends Table implements FeIcebergTable {
   @Override
   public void initMetrics() {
     super.initMetrics();
-    metrics_.addGauge(NUM_FILES_METRIC, new Gauge<Long>() {
+    metrics_.addGauge(FeFsTable.NUM_FILES_METRIC, new Gauge<Long>() {
       @Override
       public Long getValue() { return fileMetadataStats_.numFiles; }
     });
-    metrics_.addGauge(NUM_BLOCKS_METRIC, new Gauge<Long>() {
+    metrics_.addGauge(FeFsTable.NUM_BLOCKS_METRIC, new Gauge<Long>() {
       @Override
       public Long getValue() { return fileMetadataStats_.numBlocks; }
     });
-    metrics_.addGauge(TOTAL_FILE_BYTES_METRIC, new Gauge<Long>() {
+    metrics_.addGauge(FeFsTable.TOTAL_FILE_BYTES_METRIC, new Gauge<Long>() {
       @Override
       public Long getValue() { return fileMetadataStats_.totalFileBytes; }
     });
-    metrics_.addGauge(MEMORY_ESTIMATE_METRIC, new Gauge<Long>() {
+    metrics_.addGauge(FeFsTable.MEMORY_ESTIMATE_METRIC, new Gauge<Long>() {
       @Override
       public Long getValue() { return getEstimatedMetadataSize(); }
     });
@@ -647,9 +648,9 @@ public class IcebergTable extends Table implements FeIcebergTable {
     return false;
   }
 
-  private void updateMetrics(FileMetadataStats stats) {
-    long memUsageEstimate = stats.numFiles * PER_FD_MEM_USAGE_BYTES +
-        stats.numBlocks * PER_BLOCK_MEM_USAGE_BYTES;
+  private void updateMetrics(FeFsTable.FileMetadataStats stats) {
+    long memUsageEstimate = stats.numFiles * FeFsTable.PER_FD_MEM_USAGE_BYTES +
+        stats.numBlocks * FeFsTable.PER_BLOCK_MEM_USAGE_BYTES;
     setEstimatedMetadataSize(memUsageEstimate);
     setNumFiles(stats.numFiles);
     fileMetadataStats_.set(stats);

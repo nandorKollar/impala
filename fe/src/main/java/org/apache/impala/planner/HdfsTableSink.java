@@ -137,7 +137,8 @@ public class HdfsTableSink extends TableSink {
       Pair<List<Integer>, TSortingOrder> sortProperties, long writeId,
       int maxTableSinks, boolean isResultSink) {
     super(targetTable, Op.INSERT, outputExprs);
-    Preconditions.checkState(targetTable instanceof FeFsTable);
+    Preconditions.checkState(targetTable instanceof FeFsTable
+        || targetTable instanceof FeIcebergTable);
     partitionKeyExprs_ = partitionKeyExprs;
     overwrite_ = overwrite;
     inputIsClustered_ = inputIsClustered;
@@ -146,6 +147,13 @@ public class HdfsTableSink extends TableSink {
     writeId_ = writeId;
     maxHdfsSinks_ = maxTableSinks;
     isResultSink_ = isResultSink;
+  }
+
+  private FeFsTable getFeFsTable() {
+    if (targetTable_ instanceof FeIcebergTable) {
+      return ((FeIcebergTable) targetTable_).getFeFsTable();
+    }
+    return (FeFsTable) targetTable_;
   }
 
   public void setExternalOutputDir(String externalOutputDir) {
@@ -163,7 +171,7 @@ public class HdfsTableSink extends TableSink {
     float avgRowDataSize = inputNode.getAvgRowSizeWithoutPad();
     long estBytesInserted = (long) Math.ceil(avgRowDataSize * (double) cardinality);
     double totalCost = 0.0F;
-    FeFsTable table = (FeFsTable) targetTable_;
+    FeFsTable table = getFeFsTable();
     String fileFormat;
     Set<HdfsFileFormat> formats = table.getFileFormats();
     if (formats.contains(HdfsFileFormat.PARQUET)
@@ -206,7 +214,7 @@ public class HdfsTableSink extends TableSink {
       }
     }
 
-    FeFsTable table = (FeFsTable) targetTable_;
+    FeFsTable table = getFeFsTable();
     // TODO: Estimate the memory requirements more accurately by partition type.
     Set<HdfsFileFormat> formats = table.getFileFormats();
     long perPartitionMemReq = getPerPartitionMemReq(formats);
@@ -342,7 +350,7 @@ public class HdfsTableSink extends TableSink {
     THdfsTableSink hdfsTableSink = new THdfsTableSink(
         Expr.treesToThrift(partitionKeyExprs_), overwrite_, inputIsClustered_,
         sortingOrder_);
-    FeFsTable table = (FeFsTable) targetTable_;
+    FeFsTable table = getFeFsTable();
     StringBuilder error = new StringBuilder();
     int skipHeaderLineCount = table.parseSkipHeaderLineCount(error);
     // Errors will be caught during analysis.

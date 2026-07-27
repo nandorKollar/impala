@@ -120,7 +120,7 @@ public class LoadDataStmt extends StatementBase implements SingleTableStmt {
   public void analyze(Analyzer analyzer) throws AnalysisException {
     dbName_ = analyzer.getTargetDbName(tableName_);
     table_ = analyzer.getTable(tableName_, Privilege.INSERT);
-    if (!(table_ instanceof FeFsTable)) {
+    if (!(table_ instanceof FeFsTable) && !(table_ instanceof FeIcebergTable)) {
       throw new AnalysisException("LOAD DATA only supported for HDFS tables: " +
           dbName_ + "." + getTbl());
     }
@@ -144,7 +144,13 @@ public class LoadDataStmt extends StatementBase implements SingleTableStmt {
             "specified: " + dbName_ + "." + getTbl());
       }
     }
-    analyzePaths(analyzer, (FeFsTable) table_);
+    FeFsTable fsFsTable;
+    if (table_ instanceof FeIcebergTable) {
+      fsFsTable = ((FeIcebergTable) table_).getFeFsTable();
+    } else {
+      fsFsTable = (FeFsTable) table_;
+    }
+    analyzePaths(analyzer, fsFsTable);
     if (table_ instanceof FeIcebergTable) {
       analyzeLoadIntoIcebergTable();
     }

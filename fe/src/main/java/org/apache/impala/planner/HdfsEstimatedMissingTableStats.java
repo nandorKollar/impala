@@ -21,7 +21,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.apache.impala.catalog.Column;
 import org.apache.impala.catalog.FeFsPartition;
-import org.apache.impala.catalog.FeFsTable;
+import org.apache.impala.catalog.FeScannable;
 import org.apache.impala.catalog.FileDescriptor;
 import org.apache.impala.catalog.HdfsCompression;
 import org.apache.impala.catalog.HdfsFileFormat;
@@ -102,7 +102,7 @@ public class HdfsEstimatedMissingTableStats {
     statsNumRows_ = -1;
   }
 
-  public HdfsEstimatedMissingTableStats(TQueryOptions queryOptions, FeFsTable tbl,
+  public HdfsEstimatedMissingTableStats(TQueryOptions queryOptions, FeScannable tbl,
       Collection<? extends FeFsPartition> partitions, long tableNumRowsHint) {
     int numPartitionsWithNumRows = 0;
     boolean hasCorruptTableStats = false;

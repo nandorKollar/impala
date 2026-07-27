@@ -55,6 +55,7 @@ import org.apache.impala.catalog.Column;
 import org.apache.impala.catalog.ColumnStats;
 import org.apache.impala.catalog.FeFsPartition;
 import org.apache.impala.catalog.FeFsTable;
+import org.apache.impala.catalog.FeScannable;
 import org.apache.impala.catalog.FeTable;
 import org.apache.impala.catalog.FileBlock;
 import org.apache.impala.catalog.FileDescriptor;
@@ -196,7 +197,7 @@ public class HdfsScanNode extends ScanNode {
   private static final double COST_COEFFICIENT_COLUMNAR_PREDICATE_EVAL = 0.0281;
   private static final double COST_COEFFICIENT_NONCOLUMNAR_PREDICATE_EVAL = 0.0549;
 
-  protected final FeFsTable tbl_;
+  protected final FeScannable tbl_;
 
   // List of partitions to be scanned. Partitions have been pruned.
   protected final List<FeFsPartition> partitions_;
@@ -370,7 +371,7 @@ public class HdfsScanNode extends ScanNode {
       MultiAggregateInfo aggInfo, List<Expr> partConjuncts, boolean isPartitionKeyScan,
       ScanNodeHelper helper) {
     super(id, desc, createDisplayName(hdfsTblRef.getTable()), helper);
-    tbl_ = (FeFsTable)desc.getTable();
+    tbl_ = (FeScannable)desc.getTable();
     conjuncts_ = conjuncts;
     partitions_ = new ArrayList<>(partitions);
     partitionConjuncts_ = partConjuncts;
@@ -378,7 +379,7 @@ public class HdfsScanNode extends ScanNode {
     replicaPreference_ = hdfsTblRef.getReplicaPreference();
     randomReplica_ = hdfsTblRef.getRandomReplica();
     tableNumRowsHint_ = hdfsTblRef.getTableNumRowsHint();
-    FeFsTable hdfsTable = (FeFsTable)hdfsTblRef.getTable();
+    FeScannable hdfsTable = (FeScannable)hdfsTblRef.getTable();
     Preconditions.checkState(tbl_ == hdfsTable);
     isFullAcidTable_ =
         AcidUtils.isFullAcidTable(hdfsTable.getMetaStoreTable().getParameters());
@@ -396,8 +397,8 @@ public class HdfsScanNode extends ScanNode {
    * Returns the display name for this scan node. Of the form "SCAN [storage-layer-name]"
    */
   private static String createDisplayName(FeTable table) {
-    Preconditions.checkState(table instanceof FeFsTable);
-    return "SCAN " + ((FeFsTable) table).getFsType();
+    Preconditions.checkState(table instanceof FeScannable);
+    return "SCAN " + ((FeScannable) table).getFsType();
   }
 
   @Override
@@ -967,8 +968,8 @@ public class HdfsScanNode extends ScanNode {
    */
   private boolean allowMinMaxFilter(FeTable table, Column column,
       TQueryOptions queryOptions, boolean isBoundByPartitionColumns) {
-    if (column == null || table == null || !(table instanceof FeFsTable)) return false;
-    FeFsTable feFsTable = (FeFsTable) table;
+    if (column == null || table == null || !(table instanceof FeScannable)) return false;
+    FeScannable feFsTable = (FeScannable) table;
 
     boolean minmaxOnPartitionColumns = queryOptions.isMinmax_filter_partition_columns();
     boolean minmaxOnSortedColumns = queryOptions.isMinmax_filter_sorted_columns();
@@ -2017,7 +2018,7 @@ public class HdfsScanNode extends ScanNode {
   protected String getNodeExplainString(String prefix, String detailPrefix,
       TExplainLevel detailLevel) {
     StringBuilder output = new StringBuilder();
-    FeFsTable table = (FeFsTable) desc_.getTable();
+    FeScannable table = (FeScannable) desc_.getTable();
     output.append(String.format("%s%s [%s", prefix, getDisplayLabel(),
         getDisplayLabelDetail()));
     if (detailLevel.ordinal() >= TExplainLevel.EXTENDED.ordinal() &&
@@ -2127,7 +2128,7 @@ public class HdfsScanNode extends ScanNode {
   }
 
   protected void getPartitionExplainString(StringBuilder output,
-      String detailPrefix, FeFsTable table, long testTableSize) {
+      String detailPrefix, FeScannable table, long testTableSize) {
     String partMetaTemplate = "partitions=%d/%s files=%d size=%s\n";
     String erasureCodeTemplate = "erasure coded: files=%d size=%s\n";
     if (!numPartitionsPerFs_.isEmpty()) {
@@ -2177,11 +2178,11 @@ public class HdfsScanNode extends ScanNode {
     return partsPerFs;
   }
 
-  protected int getNumPartitions(FeFsTable table) {
+  protected int getNumPartitions(FeScannable table) {
     return table.getPartitions().size();
   }
 
-  protected String getNumPartitionString(FeFsTable table) {
+  protected String getNumPartitionString(FeScannable table) {
     return Integer.toString(getNumPartitions(table));
   }
 
@@ -2342,7 +2343,7 @@ public class HdfsScanNode extends ScanNode {
     Preconditions.checkState(0 < numNodes_);
     Preconditions.checkState(numNodes_ <= scanRangeSize);
     Preconditions.checkNotNull(desc_);
-    Preconditions.checkState(desc_.getTable() instanceof FeFsTable);
+    Preconditions.checkState(desc_.getTable() instanceof FeScannable);
     List<Long> columnReservations = null;
     if (hasParquet(fileFormats_) || hasOrc(fileFormats_)) {
       boolean orcAsyncRead = hasOrc(fileFormats_) && queryOptions.orc_async_read;
@@ -2489,12 +2490,11 @@ public class HdfsScanNode extends ScanNode {
    */
   private List<Long> computeMinColumnMemReservations(boolean orcAsyncRead) {
     List<Long> columnByteSizes = new ArrayList<>();
-    FeFsTable table = (FeFsTable) desc_.getTable();
     boolean havePosSlot = false;
     for (SlotDescriptor slot: desc_.getSlots()) {
       if (!slot.isMaterialized() || slot == countStarSlot_) continue;
       if (slot.getColumn() == null ||
-          slot.getColumn().getPosition() >= table.getNumClusteringCols()) {
+          slot.getColumn().getPosition() >= tbl_.getNumClusteringCols()) {
         Type type = slot.getType();
         if (slot.isArrayPosRef()) {
           // Position virtual slots can be materialized by piggybacking on another slot.

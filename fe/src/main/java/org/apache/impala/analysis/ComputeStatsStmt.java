@@ -978,6 +978,9 @@ public class ComputeStatsStmt extends StatementBase implements SingleTableStmt {
    * only, false otherwise.
    */
   public boolean isColumnar() {
+    if (table_ instanceof FeIcebergTable) {
+      return FeIcebergTable.Utils.isColumnar((FeIcebergTable) table_);
+    }
     if (!(table_ instanceof FeFsTable)) return false;
     Collection<? extends FeFsPartition> affectedPartitions = null;
     if (partitionSet_ != null) {
@@ -991,10 +994,6 @@ public class ComputeStatsStmt extends StatementBase implements SingleTableStmt {
           && partition.getFileFormat() != HdfsFileFormat.HUDI_PARQUET
           && partition.getFileFormat() != HdfsFileFormat.ORC)
         return false;
-    }
-
-    if (table_ instanceof FeIcebergTable) {
-      return FeIcebergTable.Utils.isColumnar((FeIcebergTable) table_);
     }
     return true;
   }

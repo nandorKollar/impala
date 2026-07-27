@@ -33,6 +33,7 @@ import org.apache.impala.authorization.Privilege;
 import org.apache.impala.authorization.TableMask;
 import org.apache.impala.catalog.Column;
 import org.apache.impala.catalog.FeFsTable;
+import org.apache.impala.catalog.FeIcebergTable;
 import org.apache.impala.catalog.FeKuduTable;
 import org.apache.impala.catalog.FeTable;
 import org.apache.impala.catalog.FeView;
@@ -502,7 +503,8 @@ public class TableRef extends StmtNode {
     if (sampleParams_ == null) return;
     sampleParams_.analyze(analyzer);
     if (!(this instanceof BaseTableRef)
-        || !(resolvedPath_.destTable() instanceof FeFsTable)) {
+        || (!(resolvedPath_.destTable() instanceof FeFsTable)
+            && !(resolvedPath_.destTable() instanceof FeIcebergTable))) {
       throw new AnalysisException(
           "TABLESAMPLE is only supported on file-based tables: " + getUniqueAlias());
     }
@@ -595,8 +597,8 @@ public class TableRef extends StmtNode {
             TABLE_ROW_HINT));
         return false;
       }
-    } else if (!(table instanceof FeFsTable)) {
-      analyzer.addWarning("Table hints only supported for Hdfs/Kudu tables.");
+    } else if (!(table instanceof FeFsTable) && !(table instanceof FeIcebergTable)) {
+      analyzer.addWarning("Table hints only supported for Hdfs/Kudu/Iceberg tables.");
       return false;
     }
     return true;

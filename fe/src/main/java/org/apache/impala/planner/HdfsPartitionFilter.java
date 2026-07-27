@@ -31,7 +31,7 @@ import org.apache.impala.analysis.SlotDescriptor;
 import org.apache.impala.analysis.SlotId;
 import org.apache.impala.analysis.SlotRef;
 import org.apache.impala.catalog.Column;
-import org.apache.impala.catalog.FeFsTable;
+import org.apache.impala.catalog.FeScannable;
 import org.apache.impala.catalog.PrunablePartition;
 import org.apache.impala.common.ImpalaException;
 import org.apache.impala.common.NotImplementedException;
@@ -57,7 +57,7 @@ public class HdfsPartitionFilter {
   // indices into Table.getColumnNames()
   private final List<Integer> refdKeys_ = new ArrayList<>();
 
-  public HdfsPartitionFilter(Expr predicate, FeFsTable tbl, Analyzer analyzer) {
+  public HdfsPartitionFilter(Expr predicate, FeScannable tbl, Analyzer analyzer) {
     predicate_ = predicate;
 
     // populate lhsSlotRefs_ and refdKeys_

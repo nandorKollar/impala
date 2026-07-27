@@ -72,7 +72,7 @@ import javax.annotation.Nullable;
  * TODO(vercegovac): various method names and comments in this interface refer
  * to HDFS where they should be more generically "Fs".
  */
-public interface FeFsTable extends FeTable {
+public interface FeFsTable extends FeScannable {
   /** hive's default value for table property 'serialization.null.format' */
   public static final String DEFAULT_NULL_COLUMN_VALUE = "\\N";
 
@@ -828,7 +828,7 @@ public interface FeFsTable extends FeTable {
      * Reconciles the Impalad-wide --enable_stats_extrapolation flag and the
      * TBL_PROP_ENABLE_STATS_EXTRAPOLATION table property
      */
-    public static boolean isStatsExtrapolationEnabled(FeFsTable table) {
+    public static boolean isStatsExtrapolationEnabled(FeTable table) {
       org.apache.hadoop.hive.metastore.api.Table msTbl = table.getMetaStoreTable();
       String propVal = msTbl.getParameters().get(
           HdfsTable.TBL_PROP_ENABLE_STATS_EXTRAPOLATION);
@@ -863,7 +863,7 @@ public interface FeFsTable extends FeTable {
      * - the row count statistic is zero and the file bytes is non-zero
      * Otherwise, returns a value >= 1.
      */
-    public static long getExtrapolatedNumRows(FeFsTable table, long fileBytes) {
+    public static long getExtrapolatedNumRows(FeTable table, long fileBytes) {
       if (!isStatsExtrapolationEnabled(table)) return -1;
       if (fileBytes == 0) return 0;
       if (fileBytes < 0) return -1;
@@ -937,7 +937,7 @@ public interface FeFsTable extends FeTable {
      * TODO(IMPALA-9883): Fix this for full ACID tables.
      */
     public static Map<Long, List<FileDescriptor>>
-        getFilesSample(FeFsTable table, Collection<? extends FeFsPartition> inputParts,
+        getFilesSample(FeTable table, Collection<? extends FeFsPartition> inputParts,
             long percentBytes, long minSampleBytes, long randomSeed) {
       Preconditions.checkState(percentBytes >= 0 && percentBytes <= 100);
       Preconditions.checkState(minSampleBytes >= 0);

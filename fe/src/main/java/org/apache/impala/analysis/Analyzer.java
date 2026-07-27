@@ -1155,6 +1155,7 @@ public class Analyzer {
       }
       // The table must be a base table.
       Preconditions.checkState(table instanceof FeFsTable ||
+          table instanceof FeIcebergTable ||
           table instanceof FeKuduTable ||
           table instanceof FeHBaseTable ||
           table instanceof FeDataSourceTable ||

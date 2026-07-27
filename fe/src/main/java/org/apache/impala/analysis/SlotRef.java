@@ -23,6 +23,7 @@ import java.util.Set;
 
 import org.apache.impala.analysis.Path.PathType;
 import org.apache.impala.catalog.FeFsTable;
+import org.apache.impala.catalog.FeIcebergTable;
 import org.apache.impala.catalog.FeTable;
 import org.apache.impala.catalog.HdfsFileFormat;
 import org.apache.impala.catalog.StructType;
@@ -227,6 +228,9 @@ public class SlotRef extends Expr {
         checkTableTypeSupportsStruct(rootTable);
         if (rootTable instanceof FeFsTable) {
           checkFileFormatSupportsStruct((FeFsTable)rootTable);
+        } else if (rootTable instanceof FeIcebergTable) {
+          checkFileFormatSupportsStruct(
+              ((FeIcebergTable) rootTable).getFeFsTable());
         }
       }
     }
@@ -234,6 +238,7 @@ public class SlotRef extends Expr {
 
   private void checkTableTypeSupportsStruct(FeTable feTable) throws AnalysisException {
     if (!(feTable instanceof FeFsTable) &&
+        !(feTable instanceof FeIcebergTable) &&
         !(feTable instanceof IcebergMetadataTable)) {
       throw new AnalysisException(
           String.format("%s is not supported when querying STRUCT type %s",

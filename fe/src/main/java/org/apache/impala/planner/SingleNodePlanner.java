@@ -1902,12 +1902,11 @@ public class SingleNodePlanner implements SingleNodePlannerIntf {
     }
 
     FeTable table = tblRef.getTable();
-    if (table instanceof FeFsTable) {
-      if (table instanceof FeIcebergTable) {
-        IcebergScanPlanner icebergPlanner = new IcebergScanPlanner(analyzer, ctx_, tblRef,
-            conjuncts, aggInfo, new ScanNodeHelperImpl(aggInfo));
-        return icebergPlanner.createIcebergScanPlan();
-      }
+    if (table instanceof FeIcebergTable) {
+      IcebergScanPlanner icebergPlanner = new IcebergScanPlanner(analyzer, ctx_, tblRef,
+          conjuncts, aggInfo, new ScanNodeHelperImpl(aggInfo));
+      return icebergPlanner.createIcebergScanPlan();
+    } else if (table instanceof FeFsTable) {
       return createHdfsScanPlan(tblRef, aggInfo, conjuncts, analyzer);
     } else if (table instanceof FeDataSourceTable) {
       scanNode = new DataSourceScanNode(ctx_.getNextNodeId(), tblRef.getDesc(),

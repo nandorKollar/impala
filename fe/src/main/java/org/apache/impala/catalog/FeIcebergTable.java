@@ -92,6 +92,7 @@ import org.apache.impala.thrift.TIcebergTable;
 import org.apache.impala.thrift.TNetworkAddress;
 import org.apache.impala.thrift.TResultSet;
 import org.apache.impala.thrift.TResultSetMetadata;
+import org.apache.impala.thrift.TSortingOrder;
 import org.apache.impala.util.Hash128;
 import org.apache.impala.util.HdfsCachingUtil;
 import org.apache.impala.util.IcebergSchemaConverter;
@@ -107,7 +108,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Frontend interface for interacting with an Iceberg-backed table.
  */
-public interface FeIcebergTable extends FeFsTable {
+public interface FeIcebergTable extends FeScannable {
   final static Logger LOG = LoggerFactory.getLogger(FeIcebergTable.class);
   /**
    * Return content file store.
@@ -240,25 +241,19 @@ public interface FeIcebergTable extends FeFsTable {
     return getIcebergApiTable().schema();
   }
 
-  @Override
   default List<String> getPrimaryKeyColumnNames() throws TException {
     return Lists.newArrayList(getIcebergSchema().identifierFieldNames());
   }
 
-  @Override
-  default boolean isCacheable() {
-    return getFeFsTable().isCacheable();
-  }
-
-  @Override
-  default boolean isLocationCacheable() {
-    return getFeFsTable().isLocationCacheable();
-  }
-
-  @Override
   default boolean isMarkedCached() {
     return getFeFsTable().isMarkedCached();
   }
+
+  default String getHdfsBaseDir() {
+    return getFeFsTable().getHdfsBaseDir();
+  }
+
+  // --- FeScannable implementations delegating to the internal FeFsTable ---
 
   @Override
   default String getLocation() {
@@ -271,11 +266,6 @@ public interface FeIcebergTable extends FeFsTable {
   }
 
   @Override
-  default String getHdfsBaseDir() {
-    return getFeFsTable().getHdfsBaseDir();
-  }
-
-  @Override
   default FileSystemUtil.FsType getFsType() {
     return getFeFsTable().getFsType();
   }
@@ -283,31 +273,6 @@ public interface FeIcebergTable extends FeFsTable {
   @Override
   default long getTotalHdfsBytes() {
     return getTTableStats().getTotal_file_bytes();
-  }
-
-  @Override
-  default boolean usesAvroSchemaOverride() {
-    return getFeFsTable().usesAvroSchemaOverride();
-  }
-
-  @Override
-  default Set<HdfsFileFormat> getFileFormats() {
-    return getFeFsTable().getFileFormats();
-  }
-
-  @Override
-  default boolean hasWriteAccessToBaseDir() {
-    return getFeFsTable().hasWriteAccessToBaseDir();
-  }
-
-  @Override
-  default String getFirstLocationWithoutWriteAccess() {
-    return getFeFsTable().getFirstLocationWithoutWriteAccess();
-  }
-
-  @Override
-  default TResultSet getTableStats() {
-    return getFeFsTable().getTableStats();
   }
 
   @Override
@@ -343,6 +308,21 @@ public interface FeIcebergTable extends FeFsTable {
   @Override
   default ListMap<TNetworkAddress> getHostIndex() {
     return getFeFsTable().getHostIndex();
+  }
+
+  @Override
+  default int parseSkipHeaderLineCount(StringBuilder error) {
+    return 0;
+  }
+
+  @Override
+  default int getSortByColumnIndex(String col_name) {
+    return -1;
+  }
+
+  @Override
+  default TSortingOrder getSortOrderForSortByColumn() {
+    return null;
   }
 
   static List<Column> getHiddenColumns(int formatVersion, int startPosition) {
@@ -387,7 +367,7 @@ public interface FeIcebergTable extends FeFsTable {
     return false;
   }
 
-  @Override /* FeFsTable */
+  @Override
   default Map<Long, List<FileDescriptor>> getFilesSample(
       long percentBytes, long minSampleBytes, long randomSeed) {
     // There will be two separate IcebergScanNodes for data files without delete, and for

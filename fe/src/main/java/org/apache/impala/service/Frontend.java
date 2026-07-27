@@ -1788,7 +1788,7 @@ public class Frontend {
       List<Long> filteredPartitionIds, @Nullable TResultSet filteredIcebergPartitionStats)
       throws ImpalaException {
     FeTable table = getCatalog().getTable(dbName, tableName);
-    if (table instanceof FeFsTable) {
+    if (table instanceof FeFsTable || table instanceof FeIcebergTable) {
       if (table instanceof FeIcebergTable && op == TShowStatsOp.PARTITIONS) {
         // For Iceberg tables with WHERE clause, use the pre-computed filtered stats.
         // Following the IMPALA-12243 pattern, we compute results during analysis
@@ -3503,7 +3503,7 @@ public class Frontend {
       long writeId, boolean isOverwrite) {
     TFinalizeParams finalizeParams = addFinalizationParamsForDml(
         queryCtx, targetTable, isOverwrite);
-    if (targetTable instanceof FeFsTable) {
+    if (targetTable instanceof FeFsTable || targetTable instanceof FeIcebergTable) {
       if (writeId != -1) {
         Preconditions.checkState(queryCtx.isSetTransaction_id());
         finalizeParams.setTransaction_id(queryCtx.getTransaction_id());
@@ -3529,14 +3529,16 @@ public class Frontend {
   private static TFinalizeParams addFinalizationParamsForDml(TQueryCtx queryCtx,
       FeTable targetTable, boolean isOverwrite) {
     TFinalizeParams finalizeParams = new TFinalizeParams();
-    if (targetTable instanceof FeFsTable) {
+    if (targetTable instanceof FeFsTable || targetTable instanceof FeIcebergTable) {
       finalizeParams.setIs_overwrite(isOverwrite);
       finalizeParams.setTable_name(targetTable.getTableName().getTbl());
       finalizeParams.setTable_id(DescriptorTable.TABLE_SINK_ID);
       String db = targetTable.getTableName().getDb();
       finalizeParams.setTable_db(db == null ? queryCtx.session.database : db);
-      FeFsTable hdfsTable = (FeFsTable) targetTable;
-      finalizeParams.setHdfs_base_dir(hdfsTable.getHdfsBaseDir());
+      String hdfsBaseDir = (targetTable instanceof FeFsTable) ?
+          ((FeFsTable) targetTable).getHdfsBaseDir() :
+          ((FeIcebergTable) targetTable).getHdfsBaseDir();
+      finalizeParams.setHdfs_base_dir(hdfsBaseDir);
     }
     return finalizeParams;
   }

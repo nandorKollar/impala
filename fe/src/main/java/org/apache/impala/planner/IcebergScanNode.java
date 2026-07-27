@@ -35,6 +35,7 @@ import org.apache.impala.analysis.MultiAggregateInfo;
 import org.apache.impala.analysis.TableRef;
 import org.apache.impala.catalog.FeFsPartition;
 import org.apache.impala.catalog.FeFsTable;
+import org.apache.impala.catalog.FeScannable;
 import org.apache.impala.catalog.FeIcebergTable;
 import org.apache.impala.catalog.FileDescriptor;
 import org.apache.impala.catalog.HdfsFileFormat;
@@ -271,7 +272,7 @@ public class IcebergScanNode extends HdfsScanNode {
   // loading. In case of time travel, the number of all partitions is not available
   // in the old snapshot, therefore this info is omitted from the explain string.
   @Override
-  protected String getNumPartitionString(FeFsTable table) {
+  protected String getNumPartitionString(FeScannable table) {
     Preconditions.checkState(table instanceof FeIcebergTable);
     Snapshot currentSnapshot =
         ((FeIcebergTable) table).getIcebergApiTable().currentSnapshot();

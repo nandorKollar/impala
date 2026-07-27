@@ -217,15 +217,6 @@ class ForwardingFeIcebergTable implements FeIcebergTable {
   public ForwardingFeIcebergTable(FeIcebergTable base) { this.base = base; }
 
   @Override
-  public FileSystem getFileSystem() throws CatalogException {
-    return base.getFileSystem();
-  }
-
-  public static FileSystem getFileSystem(Path filePath) throws CatalogException {
-    return FeFsTable.getFileSystem(filePath);
-  }
-
-  @Override
   public List<String> getPrimaryKeyColumnNames() throws TException {
     return base.getPrimaryKeyColumnNames();
   }
@@ -233,11 +224,6 @@ class ForwardingFeIcebergTable implements FeIcebergTable {
   @Override
   public boolean isPartitioned() {
     return base.isPartitioned();
-  }
-
-  @Override
-  public List<String> getForeignKeysSql() throws TException {
-    return base.getForeignKeysSql();
   }
 
   @Override
@@ -351,16 +337,6 @@ class ForwardingFeIcebergTable implements FeIcebergTable {
   }
 
   @Override
-  public boolean isCacheable() {
-    return base.isCacheable();
-  }
-
-  @Override
-  public boolean isLocationCacheable() {
-    return base.isLocationCacheable();
-  }
-
-  @Override
   public boolean isMarkedCached() {
     return base.isMarkedCached();
   }
@@ -390,30 +366,6 @@ class ForwardingFeIcebergTable implements FeIcebergTable {
     return base.getTotalHdfsBytes();
   }
 
-  @Override
-  public boolean usesAvroSchemaOverride() {
-    return base.usesAvroSchemaOverride();
-  }
-
-  @Override
-  public Set<HdfsFileFormat> getFileFormats() {
-    return base.getFileFormats();
-  }
-
-  @Override
-  public boolean hasWriteAccessToBaseDir() {
-    return base.hasWriteAccessToBaseDir();
-  }
-
-  @Override
-  public String getFirstLocationWithoutWriteAccess() {
-    return base.getFirstLocationWithoutWriteAccess();
-  }
-
-  @Override
-  public TResultSet getTableStats() {
-    return base.getTableStats();
-  }
 
   @Override
   public Collection<? extends PrunablePartition> getPartitions() {

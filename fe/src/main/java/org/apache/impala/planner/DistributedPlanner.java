@@ -30,6 +30,7 @@ import org.apache.impala.analysis.MultiAggregateInfo.AggPhase;
 import org.apache.impala.analysis.SlotRef;
 import org.apache.impala.analysis.QueryStmt;
 import org.apache.impala.catalog.FeFsTable;
+import org.apache.impala.catalog.FeIcebergTable;
 import org.apache.impala.catalog.FeKuduTable;
 import org.apache.impala.common.ImpalaException;
 import org.apache.impala.common.InternalException;
@@ -204,7 +205,8 @@ public class DistributedPlanner {
       List<PlanFragment> fragments)
       throws ImpalaException {
     boolean isComputeCost = analyzer.getQueryOptions().isCompute_processing_cost();
-    boolean enforceHdfsWriterLimit = dmlStmt.getTargetTable() instanceof FeFsTable
+    boolean enforceHdfsWriterLimit = (dmlStmt.getTargetTable() instanceof FeFsTable
+        || dmlStmt.getTargetTable() instanceof FeIcebergTable)
         && (analyzer.getQueryOptions().getMax_fs_writers() > 0 || isComputeCost);
 
     if (dmlStmt.hasNoShuffleHint() && !enforceHdfsWriterLimit) return inputFragment;

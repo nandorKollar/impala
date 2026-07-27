@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.impala.catalog.ColumnStats;
 import org.apache.impala.catalog.FeFsTable;
+import org.apache.impala.catalog.FeIcebergTable;
 import org.apache.impala.catalog.FeKuduTable;
 import org.apache.impala.catalog.FeTable;
 import org.apache.impala.catalog.StructType;
@@ -555,17 +556,16 @@ public class TupleDescriptor {
    */
   public boolean hasClusteringColsOnly() {
     FeTable table = getTable();
-    if (!(table instanceof FeFsTable)) return false;
+    if (!(table instanceof FeFsTable) && !(table instanceof FeIcebergTable)) return false;
     // If we have no materialized slots, we are referencing no columns, so it's
     // trivially true that that we're referencing only partition columns.
     if (!hasMaterializedSlots()) return true;
     if (table.getNumClusteringCols() == 0) return false;
 
-    FeFsTable hdfsTable = (FeFsTable)table;
     for (SlotDescriptor slotDesc: getSlots()) {
       if (!slotDesc.isMaterialized()) continue;
       if (slotDesc.getColumn() == null ||
-          !hdfsTable.isClusteringColumn(slotDesc.getColumn())) {
+          !table.isClusteringColumn(slotDesc.getColumn())) {
         return false;
       }
     }

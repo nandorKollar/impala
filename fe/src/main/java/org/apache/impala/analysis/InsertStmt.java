@@ -550,59 +550,58 @@ public class InsertStmt extends DmlStatementBase {
       }
     }
 
-    if (table_ instanceof FeFsTable) {
+    if (table_ instanceof FeFsTable || table_ instanceof FeIcebergTable) {
       setMaxTableSinks(analyzer_.getQueryOptions().getMax_fs_writers());
-      FeFsTable fsTable = (FeFsTable) table_;
+      String location = (table_ instanceof FeFsTable) ?
+          ((FeFsTable) table_).getLocation() :
+          ((FeIcebergTable) table_).getLocation();
       StringBuilder error = new StringBuilder();
-      fsTable.parseSkipHeaderLineCount(error);
+      if (table_ instanceof FeFsTable) {
+        ((FeFsTable) table_).parseSkipHeaderLineCount(error);
+      }
       if (error.length() > 0) throw new AnalysisException(error.toString());
       try {
-        if (!FileSystemUtil.isImpalaWritableFilesystem(fsTable.getLocation())) {
+        if (!FileSystemUtil.isImpalaWritableFilesystem(location)) {
           throw new AnalysisException(String.format("Unable to INSERT into target " +
               "table (%s) because %s is not a supported filesystem.", targetTableName_,
-              fsTable.getLocation()));
+              location));
         }
       } catch (IOException e) {
         throw new AnalysisException(String.format("Unable to INSERT into target " +
             "table (%s): %s.", targetTableName_, e.getMessage()), e);
       }
-      for (int colIdx = 0; colIdx < numClusteringCols; ++colIdx) {
-        Column col = fsTable.getColumns().get(colIdx);
-        // Hive 1.x has a number of issues handling BOOLEAN partition columns (see HIVE-6590).
-        // Instead of working around the Hive bugs, INSERT is disabled for BOOLEAN
-        // partitions in Impala when built against Hive 1. HIVE-6590 is currently resolved,
-        // but not in Hive 2.3.2, the latest release as of 3/17/2018.
-        if (col.getType() == Type.BOOLEAN) {
-          throw new AnalysisException(String.format("INSERT into table with BOOLEAN " +
-              "partition column (%s) is not supported: %s", col.getName(),
-              targetTableName_));
-        }
-      }
-      // Check if the target partition is supported to write. For static partitioning the
-      // file format is available on partition level, however for dynamic partitioning
-      // the target partition formats are unknown during analysis and planning, therefore
-      // it will be verified based on the table metadata.
-      if (isStaticPartitionTarget()) {
-        PrunablePartition partition =
-            HdfsTable.getPartition(fsTable, partitionKeyValues_);
-        if (partition != null && partition instanceof FeFsPartition) {
-          HdfsFileFormat fileFormat = ((FeFsPartition) partition).getFileFormat();
-          Boolean notSupported =
-              !HdfsTableSink.SUPPORTED_FILE_FORMATS.contains(fileFormat);
-          if (notSupported) {
-            throw new AnalysisException(String.format("Writing the destination " +
-                "partition format '" + fileFormat + "' is not supported."));
+      if (table_ instanceof FeFsTable) {
+        FeFsTable fsTable = (FeFsTable) table_;
+        for (int colIdx = 0; colIdx < numClusteringCols; ++colIdx) {
+          Column col = fsTable.getColumns().get(colIdx);
+          if (col.getType() == Type.BOOLEAN) {
+            throw new AnalysisException(String.format("INSERT into table with BOOLEAN " +
+                "partition column (%s) is not supported: %s", col.getName(),
+                targetTableName_));
           }
         }
-      } else {
-        Set<HdfsFileFormat> formats = fsTable.getFileFormats();
-        Set<HdfsFileFormat> unsupportedFormats =
-            Sets.difference(formats, HdfsTableSink.SUPPORTED_FILE_FORMATS);
-        if (!unsupportedFormats.isEmpty()) {
-          throw new AnalysisException(String.format("Destination table '" +
-              fsTable.getFullName() + "' contains partition format(s) that are not " +
-              "supported to write: '" + Joiner.on(',').join(unsupportedFormats) + "', " +
-              "dynamic partition clauses are forbidden."));
+        if (isStaticPartitionTarget()) {
+          PrunablePartition partition =
+              HdfsTable.getPartition(fsTable, partitionKeyValues_);
+          if (partition != null && partition instanceof FeFsPartition) {
+            HdfsFileFormat fileFormat = ((FeFsPartition) partition).getFileFormat();
+            Boolean notSupported =
+                !HdfsTableSink.SUPPORTED_FILE_FORMATS.contains(fileFormat);
+            if (notSupported) {
+              throw new AnalysisException(String.format("Writing the destination " +
+                  "partition format '" + fileFormat + "' is not supported."));
+            }
+          }
+        } else {
+          Set<HdfsFileFormat> formats = fsTable.getFileFormats();
+          Set<HdfsFileFormat> unsupportedFormats =
+              Sets.difference(formats, HdfsTableSink.SUPPORTED_FILE_FORMATS);
+          if (!unsupportedFormats.isEmpty()) {
+            throw new AnalysisException(String.format("Destination table '" +
+                fsTable.getFullName() + "' contains partition format(s) that are not " +
+                "supported to write: '" + Joiner.on(',').join(unsupportedFormats) + "', " +
+                "dynamic partition clauses are forbidden."));
+          }
         }
       }
     }
@@ -1073,7 +1072,7 @@ public class InsertStmt extends DmlStatementBase {
    * an AnalysisException.
    */
   private void analyzeSortColumns() throws AnalysisException {
-    if (!(table_ instanceof FeFsTable)) return;
+    if (!(table_ instanceof FeFsTable) && !(table_ instanceof FeIcebergTable)) return;
 
     Pair<List<Integer>, TSortingOrder> sortProperties =
         AlterTableSetTblProperties.analyzeSortColumns(table_,
