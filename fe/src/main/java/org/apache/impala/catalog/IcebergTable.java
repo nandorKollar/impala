@@ -35,6 +35,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import org.apache.hadoop.fs.Path;
+
 
 import org.apache.hadoop.hive.metastore.IMetaStoreClient;
 import org.apache.hadoop.hive.metastore.TableType;
@@ -64,14 +66,19 @@ import org.apache.impala.thrift.TIcebergPartitionField;
 import org.apache.impala.thrift.TIcebergPartitionSpec;
 import org.apache.impala.thrift.TIcebergPartitionStats;
 import org.apache.impala.thrift.TIcebergTable;
+import org.apache.impala.thrift.THdfsPartition;
+import org.apache.impala.thrift.TNetworkAddress;
 import org.apache.impala.thrift.TPartialPartitionInfo;
 import org.apache.impala.thrift.TSqlConstraints;
 import org.apache.impala.thrift.TTable;
 import org.apache.impala.thrift.TTableDescriptor;
 import org.apache.impala.thrift.TTableType;
+import org.apache.impala.common.FileSystemUtil;
+import org.apache.impala.analysis.LiteralExpr;
 import org.apache.impala.util.EventSequence;
 import org.apache.impala.util.IcebergSchemaConverter;
 import org.apache.impala.util.IcebergUtil;
+import org.apache.impala.util.ListMap;
 
 /**
  * Representation of an Iceberg table in the catalog cache.
@@ -249,6 +256,13 @@ public class IcebergTable extends Table implements FeIcebergTable {
   // Treat iceberg table as a non-partitioned hdfs table in backend
   private HdfsTable hdfsTable_;
 
+  // Direct fields replacing hdfsTable_ delegation (Phase 1 of dummy partition removal).
+  // These coexist with hdfsTable_ during transition; hdfsTable_ will be removed in Phase 2.
+  private ListMap<TNetworkAddress> hostIndex_ = new ListMap<>();
+  private IcebergSyntheticPartition syntheticPartition_;
+  private String avroSchema_;
+  private boolean isMarkedCached_;
+
   // Cached Iceberg API table object.
   private org.apache.iceberg.Table icebergApiTable_;
   private String currentMetadataLocation_ = null;
@@ -397,6 +411,71 @@ public class IcebergTable extends Table implements FeIcebergTable {
   @Override
   public FeFsTable getFeFsTable() {
     return hdfsTable_;
+  }
+
+  // --- Direct field overrides (bypass getFeFsTable() delegation) ---
+
+  @Override
+  public ListMap<TNetworkAddress> getHostIndex() { return hostIndex_; }
+
+  @Override
+  public String getLocation() { return icebergTableLocation_; }
+
+  @Override
+  public String getNullPartitionKeyValue() {
+    return hdfsTable_ != null ? hdfsTable_.getNullPartitionKeyValue()
+        : FeFsTable.DEFAULT_NULL_COLUMN_VALUE;
+  }
+
+  @Override
+  public FileSystemUtil.FsType getFsType() {
+    return FileSystemUtil.FsType.getFsType(
+        new Path(icebergTableLocation_).toUri().getScheme());
+  }
+
+  @Override
+  public boolean isMarkedCached() { return isMarkedCached_; }
+
+  public String getHdfsBaseDir() { return icebergTableLocation_; }
+
+  @Override
+  public Collection<? extends PrunablePartition> getPartitions() {
+    if (syntheticPartition_ == null) return Collections.emptyList();
+    return Collections.singleton(syntheticPartition_);
+  }
+
+  @Override
+  public Set<Long> getPartitionIds() {
+    if (syntheticPartition_ == null) return Collections.emptySet();
+    return Collections.singleton(syntheticPartition_.getId());
+  }
+
+  @Override
+  public Map<Long, ? extends PrunablePartition> getPartitionMap() {
+    if (syntheticPartition_ == null) return Collections.emptyMap();
+    return Collections.singletonMap(syntheticPartition_.getId(), syntheticPartition_);
+  }
+
+  @Override
+  public TreeMap<LiteralExpr, Set<Long>> getPartitionValueMap(int col) {
+    return new TreeMap<>();
+  }
+
+  @Override
+  public Set<Long> getNullPartitionIds(int colIdx) {
+    return Collections.emptySet();
+  }
+
+  @Override
+  public List<? extends FeFsPartition> loadPartitions(Collection<Long> ids) {
+    if (syntheticPartition_ == null) return Collections.emptyList();
+    List<FeFsPartition> result = new ArrayList<>();
+    for (Long id : ids) {
+      if (id == syntheticPartition_.getId()) {
+        result.add(syntheticPartition_);
+      }
+    }
+    return result;
   }
 
   @Override
@@ -565,6 +644,9 @@ public class IcebergTable extends Table implements FeIcebergTable {
       // create an external Iceberg table, we have no column information in the SQL
       // statement.
       hdfsTable_.load(reuseMetadata, msClient, msTable_, reason, catalogTimeline);
+      // Share the hostIndex with hdfsTable_ so file descriptors and the partition
+      // reference the same network address map.
+      hostIndex_ = hdfsTable_.getHostIndex();
 
       incremental = canDoIncrementalLoad();
 
@@ -589,6 +671,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
                       : "Loaded Iceberg file descriptors");
       setAvroSchema(msClient, msTable_, fileStore_, catalogTimeline);
       updateLoadedState();
+      initSyntheticPartition();
     } catch (Exception e) {
       throw new IcebergTableLoadingException("Error loading metadata for Iceberg table "
           + icebergTableLocation_, e);
@@ -598,6 +681,15 @@ public class IcebergTable extends Table implements FeIcebergTable {
     LOG.info("Loaded file and block metadata for {}{}. Time taken: {}",
         getFullName(), incremental ? " incrementally" : "",
         PrintUtils.printTimeNs(storageMetadataLoadTime_));
+  }
+
+  private void initSyntheticPartition() {
+    isMarkedCached_ = hdfsTable_ != null && hdfsTable_.isMarkedCached();
+    syntheticPartition_ = new IcebergSyntheticPartition(
+        icebergTableLocation_, HdfsFileFormat.ICEBERG,
+        FileSystemUtil.FsType.getFsType(
+            new Path(icebergTableLocation_).toUri().getScheme()),
+        hostIndex_);
   }
 
   // Returns true if file metadata can be loaded incrementally: we have a previously
@@ -856,6 +948,11 @@ public class IcebergTable extends Table implements FeIcebergTable {
         ticeberg.getContent_files(), null, null);
     hdfsTable_.loadFromThrift(thriftTable);
     partitionStats_ = ticeberg.getPartition_stats();
+    // Copy direct fields from hdfsTable_ after it has loaded from thrift.
+    hostIndex_ = hdfsTable_.getHostIndex();
+    THdfsTable hdfsThrift = thriftTable.getHdfs_table();
+    avroSchema_ = hdfsThrift.isSetAvroSchema() ? hdfsThrift.getAvroSchema() : null;
+    initSyntheticPartition();
   }
 
   private List<IcebergPartitionSpec> loadPartitionBySpecsFromThrift(
@@ -898,10 +995,36 @@ public class IcebergTable extends Table implements FeIcebergTable {
 
   public THdfsTable transformToTHdfsTable(boolean updatePartitionFlag,
       ThriftObjectType type) {
-    THdfsTable hdfsTable = hdfsTable_.getTHdfsTable(type, null);
+    Preconditions.checkNotNull(syntheticPartition_,
+        "syntheticPartition_ not initialized for table %s", getFullName());
+    // Use hdfsTable_'s partition ID to match what HdfsScanNode uses for scan ranges.
+    // This will become the synthetic partition's own ID once hdfsTable_ is removed.
+    long partitionId = hdfsTable_ != null
+        ? hdfsTable_.getPartitionIds().iterator().next()
+        : syntheticPartition_.getId();
+    Map<Long, THdfsPartition> idToPartition = new HashMap<>();
+    THdfsPartition tPartition = FeCatalogUtils.fsPartitionToThrift(
+        syntheticPartition_, type);
+    tPartition.setId(partitionId);
+    idToPartition.put(partitionId, tPartition);
+
+    THdfsPartition prototypePartition = FeCatalogUtils.fsPartitionToThrift(
+        syntheticPartition_, ThriftObjectType.DESCRIPTOR_ONLY);
+
+    THdfsTable hdfsTable = new THdfsTable(
+        icebergTableLocation_,
+        getColumnNames(),
+        getNullPartitionKeyValue(),
+        FeFsTable.DEFAULT_NULL_COLUMN_VALUE,
+        idToPartition,
+        prototypePartition);
+    hdfsTable.setNetwork_addresses(hostIndex_.getList());
+    hdfsTable.setPartition_prefixes(
+        Collections.singletonList(icebergTableLocation_));
+    if (avroSchema_ != null) {
+      hdfsTable.setAvroSchema(avroSchema_);
+    }
     if (updatePartitionFlag) {
-      // Iceberg table only has one THdfsPartition, we set this partition
-      // file format by iceberg file format which depend on table properties
       Utils.updateIcebergPartitionFileFormat(this, hdfsTable);
     }
     return hdfsTable;
@@ -939,10 +1062,9 @@ public class IcebergTable extends Table implements FeIcebergTable {
       resp.table_info.partitions = Lists.newArrayList(partInfo);
     }
 
-    // In most of the cases, the prefix map only contains one item for the table location.
-    // Here we always send it since it's small.
+    // Iceberg tables have a single partition at the table location.
     resp.table_info.setPartition_prefixes(
-        hdfsTable_.partitionLocationCompressor_.getPrefixes());
+        Collections.singletonList(icebergTableLocation_));
 
     if (req.table_info_selector.want_partition_files) {
       // TODO(todd) we are sending the whole host index even if we returned only

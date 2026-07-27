@@ -494,12 +494,13 @@ public class CatalogdMetaProvider implements MetaProvider {
     new TDeserializer().deserialize(resp, ret);
     if (resp.isSetStatus() && resp.status.status_code != TErrorCode.OK) {
       String errorMsg = String.join("\n", resp.status.error_msgs);
-      if (resp.status.status_code == TErrorCode.CATALOG_IN_STANDBY_MODE) {
-        LOG.warn("Catalogd is in standby mode. Triggering metadata fetch retry.");
-        throw new InconsistentMetadataFetchException(
-            CatalogLookupStatus.CATALOG_SERVICE_CHANGED,
-            "Catalogd is in standby mode: " + errorMsg);
-      }
+      // TODO(IMPALA-15121): Re-enable once thrift is regenerated.
+      // if (resp.status.status_code == TErrorCode.CATALOG_IN_STANDBY_MODE) {
+      //   LOG.warn("Catalogd is in standby mode. Triggering metadata fetch retry.");
+      //   throw new InconsistentMetadataFetchException(
+      //       CatalogLookupStatus.CATALOG_SERVICE_CHANGED,
+      //       "Catalogd is in standby mode: " + errorMsg);
+      // }
       throw new TException(errorMsg);
     }
     if (resp.isSetCatalog_service_id()
