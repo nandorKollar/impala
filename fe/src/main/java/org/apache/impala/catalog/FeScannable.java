@@ -55,6 +55,9 @@ public interface FeScannable extends FeTable {
   /** Returns the total number of bytes stored for this table. */
   long getTotalHdfsBytes();
 
+  /** Returns the set of file formats used by this table's partitions. */
+  Set<HdfsFileFormat> getFileFormats();
+
   /** Returns the index of hosts that store replicas of blocks of this table. */
   ListMap<TNetworkAddress> getHostIndex();
 

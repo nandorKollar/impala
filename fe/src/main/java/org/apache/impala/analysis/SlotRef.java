@@ -24,6 +24,7 @@ import java.util.Set;
 import org.apache.impala.analysis.Path.PathType;
 import org.apache.impala.catalog.FeFsTable;
 import org.apache.impala.catalog.FeIcebergTable;
+import org.apache.impala.catalog.FeScannable;
 import org.apache.impala.catalog.FeTable;
 import org.apache.impala.catalog.HdfsFileFormat;
 import org.apache.impala.catalog.StructType;
@@ -229,8 +230,7 @@ public class SlotRef extends Expr {
         if (rootTable instanceof FeFsTable) {
           checkFileFormatSupportsStruct((FeFsTable)rootTable);
         } else if (rootTable instanceof FeIcebergTable) {
-          checkFileFormatSupportsStruct(
-              ((FeIcebergTable) rootTable).getFeFsTable());
+          checkFileFormatSupportsStruct((FeIcebergTable) rootTable);
         }
       }
     }
@@ -250,9 +250,9 @@ public class SlotRef extends Expr {
   // Iceberg tables also have ICEBERG as HdfsFileFormat. In case of Iceberg there is no
   // need to throw exception because the data file formats in the Iceberg table will be
   // also tested separately.
-  private void checkFileFormatSupportsStruct(FeFsTable feFsTable)
+  private void checkFileFormatSupportsStruct(FeScannable feScannable)
       throws AnalysisException {
-    for (HdfsFileFormat format : feFsTable.getFileFormats()) {
+    for (HdfsFileFormat format : feScannable.getFileFormats()) {
       if (! (format == HdfsFileFormat.PARQUET ||
            format == HdfsFileFormat.ORC ||
            format == HdfsFileFormat.ICEBERG)) {

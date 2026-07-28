@@ -62,7 +62,13 @@ public class IcebergSyntheticPartition implements FeFsPartition {
   public IcebergSyntheticPartition(String location,
       HdfsFileFormat fileFormat, FileSystemUtil.FsType fsType,
       ListMap<TNetworkAddress> hostIndex) {
-    id_ = ID_COUNTER.getAndIncrement();
+    this(ID_COUNTER.getAndIncrement(), location, fileFormat, fsType, hostIndex);
+  }
+
+  public IcebergSyntheticPartition(long id, String location,
+      HdfsFileFormat fileFormat, FileSystemUtil.FsType fsType,
+      ListMap<TNetworkAddress> hostIndex) {
+    id_ = id;
     location_ = location;
     fsType_ = fsType;
     hostIndex_ = hostIndex;

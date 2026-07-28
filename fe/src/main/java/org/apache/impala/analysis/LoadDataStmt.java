@@ -144,13 +144,7 @@ public class LoadDataStmt extends StatementBase implements SingleTableStmt {
             "specified: " + dbName_ + "." + getTbl());
       }
     }
-    FeFsTable fsFsTable;
-    if (table_ instanceof FeIcebergTable) {
-      fsFsTable = ((FeIcebergTable) table_).getFeFsTable();
-    } else {
-      fsFsTable = (FeFsTable) table_;
-    }
-    analyzePaths(analyzer, fsFsTable);
+    analyzePaths(analyzer);
     if (table_ instanceof FeIcebergTable) {
       analyzeLoadIntoIcebergTable();
     }
@@ -165,8 +159,7 @@ public class LoadDataStmt extends StatementBase implements SingleTableStmt {
    * We don't check permissions for the S3AFileSystem and the AdlFileSystem due to
    * limitations with thier getAclStatus() API. (see HADOOP-13892 and HADOOP-14437)
    */
-  private void analyzePaths(Analyzer analyzer, FeFsTable table)
-      throws AnalysisException {
+  private void analyzePaths(Analyzer analyzer) throws AnalysisException {
     // The user must have permission to access the source location. Since the files will
     // be moved from this location, the user needs to have all permission.
     sourceDataPath_.analyze(analyzer, Privilege.ALL);
@@ -231,9 +224,13 @@ public class LoadDataStmt extends StatementBase implements SingleTableStmt {
         }
       }
 
-      FeFsTable.Utils.checkWriteAccess(table,
-          partitionSpec_ != null ? partitionSpec_.getPartitionSpecKeyValues() : null,
-          "LOAD DATA");
+      // For Iceberg tables, write access is verified by the generated INSERT statement
+      // in analyzeLoadIntoIcebergTable(). For HDFS tables, check directly.
+      if (table_ instanceof FeFsTable) {
+        FeFsTable.Utils.checkWriteAccess((FeFsTable) table_,
+            partitionSpec_ != null ? partitionSpec_.getPartitionSpecKeyValues() : null,
+            "LOAD DATA");
+      }
     } catch (FileNotFoundException e) {
       throw new AnalysisException("File not found: " + e.getMessage(), e);
     } catch (IOException e) {

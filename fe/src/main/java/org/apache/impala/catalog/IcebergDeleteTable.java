@@ -17,22 +17,28 @@
 
 package org.apache.impala.catalog;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import org.apache.iceberg.Table;
 import org.apache.impala.analysis.IcebergPartitionSpec;
+import org.apache.impala.analysis.LiteralExpr;
 import org.apache.impala.catalog.CatalogObject.ThriftObjectType;
+import org.apache.impala.common.FileSystemUtil;
 import org.apache.impala.thrift.TCompressionCodec;
 import org.apache.impala.thrift.THdfsFileFormat;
 import org.apache.impala.thrift.THdfsTable;
 import org.apache.impala.thrift.TIcebergCatalog;
 import org.apache.impala.thrift.TIcebergFileFormat;
 import org.apache.impala.thrift.TIcebergPartitionStats;
+import org.apache.impala.thrift.TNetworkAddress;
 import org.apache.impala.thrift.TTableDescriptor;
 import org.apache.impala.thrift.TTableStats;
 import org.apache.impala.util.AvroSchemaConverter;
+import org.apache.impala.util.ListMap;
 
 /**
  * Base class for the virtual table implementations for Iceberg deletes, like position or
@@ -115,6 +121,50 @@ public abstract class IcebergDeleteTable extends VirtualTable implements FeIcebe
     @Override
     public FeFsTable getFeFsTable() {
         return baseTable_.getFeFsTable();
+    }
+
+    @Override
+    public String getLocation() { return baseTable_.getLocation(); }
+
+    @Override
+    public String getNullPartitionKeyValue() {
+      return baseTable_.getNullPartitionKeyValue();
+    }
+
+    @Override
+    public FileSystemUtil.FsType getFsType() { return baseTable_.getFsType(); }
+
+    @Override
+    public ListMap<TNetworkAddress> getHostIndex() {
+      return baseTable_.getHostIndex();
+    }
+
+    @Override
+    public Collection<? extends PrunablePartition> getPartitions() {
+      return baseTable_.getPartitions();
+    }
+
+    @Override
+    public Set<Long> getPartitionIds() { return baseTable_.getPartitionIds(); }
+
+    @Override
+    public Map<Long, ? extends PrunablePartition> getPartitionMap() {
+      return baseTable_.getPartitionMap();
+    }
+
+    @Override
+    public TreeMap<LiteralExpr, Set<Long>> getPartitionValueMap(int col) {
+      return baseTable_.getPartitionValueMap(col);
+    }
+
+    @Override
+    public Set<Long> getNullPartitionIds(int colIdx) {
+      return baseTable_.getNullPartitionIds(colIdx);
+    }
+
+    @Override
+    public List<? extends FeFsPartition> loadPartitions(Collection<Long> ids) {
+      return baseTable_.loadPartitions(ids);
     }
 
     @Override

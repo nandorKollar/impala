@@ -26,6 +26,7 @@ import java.util.Set;
 import org.apache.impala.analysis.DescriptorTable;
 import org.apache.impala.analysis.Expr;
 import org.apache.impala.catalog.FeFsTable;
+import org.apache.impala.catalog.FeScannable;
 import org.apache.impala.catalog.FeIcebergTable;
 import org.apache.impala.catalog.FeTable;
 import org.apache.impala.catalog.HdfsFileFormat;
@@ -137,8 +138,7 @@ public class HdfsTableSink extends TableSink {
       Pair<List<Integer>, TSortingOrder> sortProperties, long writeId,
       int maxTableSinks, boolean isResultSink) {
     super(targetTable, Op.INSERT, outputExprs);
-    Preconditions.checkState(targetTable instanceof FeFsTable
-        || targetTable instanceof FeIcebergTable);
+    Preconditions.checkState(targetTable instanceof FeScannable);
     partitionKeyExprs_ = partitionKeyExprs;
     overwrite_ = overwrite;
     inputIsClustered_ = inputIsClustered;
@@ -149,11 +149,8 @@ public class HdfsTableSink extends TableSink {
     isResultSink_ = isResultSink;
   }
 
-  private FeFsTable getFeFsTable() {
-    if (targetTable_ instanceof FeIcebergTable) {
-      return ((FeIcebergTable) targetTable_).getFeFsTable();
-    }
-    return (FeFsTable) targetTable_;
+  private FeScannable getScannable() {
+    return (FeScannable) targetTable_;
   }
 
   public void setExternalOutputDir(String externalOutputDir) {
@@ -171,7 +168,7 @@ public class HdfsTableSink extends TableSink {
     float avgRowDataSize = inputNode.getAvgRowSizeWithoutPad();
     long estBytesInserted = (long) Math.ceil(avgRowDataSize * (double) cardinality);
     double totalCost = 0.0F;
-    FeFsTable table = getFeFsTable();
+    FeScannable table = getScannable();
     String fileFormat;
     Set<HdfsFileFormat> formats = table.getFileFormats();
     if (formats.contains(HdfsFileFormat.PARQUET)
@@ -214,7 +211,7 @@ public class HdfsTableSink extends TableSink {
       }
     }
 
-    FeFsTable table = getFeFsTable();
+    FeScannable table = getScannable();
     // TODO: Estimate the memory requirements more accurately by partition type.
     Set<HdfsFileFormat> formats = table.getFileFormats();
     long perPartitionMemReq = getPerPartitionMemReq(formats);
@@ -350,7 +347,7 @@ public class HdfsTableSink extends TableSink {
     THdfsTableSink hdfsTableSink = new THdfsTableSink(
         Expr.treesToThrift(partitionKeyExprs_), overwrite_, inputIsClustered_,
         sortingOrder_);
-    FeFsTable table = getFeFsTable();
+    FeScannable table = getScannable();
     StringBuilder error = new StringBuilder();
     int skipHeaderLineCount = table.parseSkipHeaderLineCount(error);
     // Errors will be caught during analysis.

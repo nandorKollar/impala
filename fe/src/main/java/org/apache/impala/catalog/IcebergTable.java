@@ -75,6 +75,8 @@ import org.apache.impala.thrift.TTableDescriptor;
 import org.apache.impala.thrift.TTableType;
 import org.apache.impala.common.FileSystemUtil;
 import org.apache.impala.analysis.LiteralExpr;
+import org.apache.impala.util.AvroSchemaConverter;
+import org.apache.impala.util.AvroSchemaUtils;
 import org.apache.impala.util.EventSequence;
 import org.apache.impala.util.IcebergSchemaConverter;
 import org.apache.impala.util.IcebergUtil;
@@ -423,8 +425,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
 
   @Override
   public String getNullPartitionKeyValue() {
-    return hdfsTable_ != null ? hdfsTable_.getNullPartitionKeyValue()
-        : FeFsTable.DEFAULT_NULL_COLUMN_VALUE;
+    return FeFsTable.DEFAULT_NULL_COLUMN_VALUE;
   }
 
   @Override
@@ -637,16 +638,6 @@ public class IcebergTable extends Table implements FeIcebergTable {
     try {
       currentMetadataLocation_ =
           ((BaseTable)icebergApiTable_).operations().current().metadataFileLocation();
-      // We use IcebergFileMetadataLoader directly to load file metadata, so we don't
-      // want 'hdfsTable_' to do any file loading.
-      hdfsTable_.setSkipIcebergFileMetadataLoading(true);
-      // Iceberg schema loading must always precede hdfs table loading, because in case we
-      // create an external Iceberg table, we have no column information in the SQL
-      // statement.
-      hdfsTable_.load(reuseMetadata, msClient, msTable_, reason, catalogTimeline);
-      // Share the hostIndex with hdfsTable_ so file descriptors and the partition
-      // reference the same network address map.
-      hostIndex_ = hdfsTable_.getHostIndex();
 
       incremental = canDoIncrementalLoad();
 
@@ -684,9 +675,18 @@ public class IcebergTable extends Table implements FeIcebergTable {
   }
 
   private void initSyntheticPartition() {
-    isMarkedCached_ = hdfsTable_ != null && hdfsTable_.isMarkedCached();
+    isMarkedCached_ = false;
     syntheticPartition_ = new IcebergSyntheticPartition(
         icebergTableLocation_, HdfsFileFormat.ICEBERG,
+        FileSystemUtil.FsType.getFsType(
+            new Path(icebergTableLocation_).toUri().getScheme()),
+        hostIndex_);
+  }
+
+  private void initSyntheticPartition(long partitionId) {
+    isMarkedCached_ = false;
+    syntheticPartition_ = new IcebergSyntheticPartition(
+        partitionId, icebergTableLocation_, HdfsFileFormat.ICEBERG,
         FileSystemUtil.FsType.getFsType(
             new Path(icebergTableLocation_).toUri().getScheme()),
         hostIndex_);
@@ -884,9 +884,21 @@ public class IcebergTable extends Table implements FeIcebergTable {
   private void setAvroSchema(IMetaStoreClient msClient,
       org.apache.hadoop.hive.metastore.api.Table msTbl,
       IcebergContentFileStore fileStore, EventSequence catalogTimeline) throws Exception {
-    if (fileStore.hasAvro()) {
-      hdfsTable_.setAvroSchemaInternal(msClient, msTbl, catalogTimeline);
+    if (!fileStore.hasAvro()) {
+      avroSchema_ = null;
+      return;
     }
+    List<Map<String, String>> schemaSearchLocations = new ArrayList<>();
+    schemaSearchLocations.add(msTbl.getSd().getSerdeInfo().getParameters());
+    schemaSearchLocations.add(msTbl.getParameters());
+    avroSchema_ = AvroSchemaUtils.getAvroSchema(schemaSearchLocations);
+    if (avroSchema_ == null) {
+      org.apache.avro.Schema inferredSchema =
+          AvroSchemaConverter.convertFieldSchemas(
+              msTbl.getSd().getCols(), getFullName());
+      avroSchema_ = inferredSchema.toString();
+    }
+    catalogTimeline.markEvent("Loaded avro schema");
   }
 
   @Override
@@ -946,13 +958,12 @@ public class IcebergTable extends Table implements FeIcebergTable {
     icebergApiTable_ = IcebergUtil.loadTable(this);
     fileStore_ = IcebergContentFileStore.fromThrift(
         ticeberg.getContent_files(), null, null);
-    hdfsTable_.loadFromThrift(thriftTable);
     partitionStats_ = ticeberg.getPartition_stats();
-    // Copy direct fields from hdfsTable_ after it has loaded from thrift.
-    hostIndex_ = hdfsTable_.getHostIndex();
     THdfsTable hdfsThrift = thriftTable.getHdfs_table();
+    hostIndex_.populate(hdfsThrift.getNetwork_addresses());
     avroSchema_ = hdfsThrift.isSetAvroSchema() ? hdfsThrift.getAvroSchema() : null;
-    initSyntheticPartition();
+    long partitionId = hdfsThrift.getPartitions().keySet().iterator().next();
+    initSyntheticPartition(partitionId);
   }
 
   private List<IcebergPartitionSpec> loadPartitionBySpecsFromThrift(
@@ -997,11 +1008,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
       ThriftObjectType type) {
     Preconditions.checkNotNull(syntheticPartition_,
         "syntheticPartition_ not initialized for table %s", getFullName());
-    // Use hdfsTable_'s partition ID to match what HdfsScanNode uses for scan ranges.
-    // This will become the synthetic partition's own ID once hdfsTable_ is removed.
-    long partitionId = hdfsTable_ != null
-        ? hdfsTable_.getPartitionIds().iterator().next()
-        : syntheticPartition_.getId();
+    long partitionId = syntheticPartition_.getId();
     Map<Long, THdfsPartition> idToPartition = new HashMap<>();
     THdfsPartition tPartition = FeCatalogUtils.fsPartitionToThrift(
         syntheticPartition_, type);

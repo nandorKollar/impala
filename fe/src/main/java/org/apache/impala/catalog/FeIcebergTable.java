@@ -311,6 +311,11 @@ public interface FeIcebergTable extends FeScannable {
   }
 
   @Override
+  default Set<HdfsFileFormat> getFileFormats() {
+    return Collections.singleton(HdfsFileFormat.ICEBERG);
+  }
+
+  @Override
   default int parseSkipHeaderLineCount(StringBuilder error) {
     return 0;
   }
@@ -931,7 +936,7 @@ public interface FeIcebergTable extends FeScannable {
       }
 
       List<FeFsPartition> partitions = new ArrayList<>(
-          iceTbl.getFeFsTable().loadAllPartitions());
+          iceTbl.loadAllPartitions());
       Preconditions.checkState(partitions.size() == 1);
       FeFsPartition part = partitions.get(0);
 

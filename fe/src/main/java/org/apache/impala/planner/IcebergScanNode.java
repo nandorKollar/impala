@@ -34,7 +34,6 @@ import org.apache.impala.analysis.Expr;
 import org.apache.impala.analysis.MultiAggregateInfo;
 import org.apache.impala.analysis.TableRef;
 import org.apache.impala.catalog.FeFsPartition;
-import org.apache.impala.catalog.FeFsTable;
 import org.apache.impala.catalog.FeScannable;
 import org.apache.impala.catalog.FeIcebergTable;
 import org.apache.impala.catalog.FileDescriptor;
@@ -117,7 +116,7 @@ public class IcebergScanNode extends HdfsScanNode {
       long snapshotId, boolean isPartitionKeyScan,
       Map<Hash128, TIcebergDeletionVector> dataFileToDV, ScanNodeHelper helper) {
     super(id, tblRef.getDesc(), conjuncts,
-        getIcebergPartition(((FeIcebergTable)tblRef.getTable()).getFeFsTable()), tblRef,
+        getIcebergPartition((FeIcebergTable)tblRef.getTable()), tblRef,
         aggInfo, null, isPartitionKeyScan, helper);
     // Hdfs table transformed from iceberg table only has one partition
     Preconditions.checkState(partitions_.size() == 1);
@@ -210,8 +209,9 @@ public class IcebergScanNode extends HdfsScanNode {
    * Get partition info from FeFsTable, we treat iceberg table as an
    * unpartitioned hdfs table
    */
-  private static List<? extends FeFsPartition> getIcebergPartition(FeFsTable feFsTable) {
-    Collection<? extends FeFsPartition> partitions = feFsTable.loadAllPartitions();
+  private static List<? extends FeFsPartition> getIcebergPartition(
+      FeIcebergTable icebergTable) {
+    Collection<? extends FeFsPartition> partitions = icebergTable.loadAllPartitions();
     return new ArrayList<>(partitions);
   }
 
