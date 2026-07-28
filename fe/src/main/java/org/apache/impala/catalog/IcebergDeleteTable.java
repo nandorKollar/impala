@@ -120,8 +120,15 @@ public abstract class IcebergDeleteTable extends VirtualTable implements FeIcebe
 
     @Override
     public FeFsTable getFeFsTable() {
-        return baseTable_.getFeFsTable();
+      throw new UnsupportedOperationException(
+          "IcebergDeleteTable does not wrap an FeFsTable. Use FeScannable methods.");
     }
+
+    @Override
+    public boolean isMarkedCached() { return baseTable_.isMarkedCached(); }
+
+    @Override
+    public String getHdfsBaseDir() { return baseTable_.getHdfsBaseDir(); }
 
     @Override
     public String getLocation() { return baseTable_.getLocation(); }

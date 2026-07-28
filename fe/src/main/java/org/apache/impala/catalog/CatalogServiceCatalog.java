@@ -1849,13 +1849,6 @@ public class CatalogServiceCatalog extends Catalog {
    */
   private boolean lockTableWithTimeout(long tblVersion, Table tbl,
       GetCatalogDeltaContext ctx) {
-    // Get the HdfsTable for pending version tracking and skip counting.
-    // For HdfsTable, this is the table itself.
-    // For IcebergTable, get the internal HdfsTable.
-    HdfsTable hdfsTable = (tbl instanceof IcebergTable)
-      ? ((IcebergTable) tbl).getHdfsTable()
-        : (HdfsTable) tbl;
-
     // see the comment below on why we need 2 attempts.
     final int maxAttempts = 2;
     int attemptCount = 0;
@@ -1877,7 +1870,7 @@ public class CatalogServiceCatalog extends Catalog {
       // We should bump up the pending table version so that this gets included in the
       // next topic update. However, there is a race condition which needs to be handled
       // here. If we update the pending version here
-      // after hdfsTable.setCatalogVersion() is called from CatalogOpExecutor, the bump up
+      // after tbl.setCatalogVersion() is called from CatalogOpExecutor, the bump up
       // of pendingVersion takes no effect. Hence we detect such case by comparing the
       // tbl version with the expected tblVersion. if the tblVersion does not match, it
       // means that the setCatalogVersion has already been called and there is no point
@@ -1886,8 +1879,8 @@ public class CatalogServiceCatalog extends Catalog {
       // unlucky again and some other write operation has acquired the tbl lock. In such
       // a case it is guaranteed that the tbl version will be updated outside current
       // window of the topic updates and it is safe to skip the table.
-      boolean pendingVersionUpdated = hdfsTable
-          .updatePendingVersion(tblVersion, incrementAndGetCatalogVersion());
+      boolean pendingVersionUpdated = updatePendingVersion(tbl, tblVersion,
+          incrementAndGetCatalogVersion());
       if (pendingVersionUpdated) break;
       // if pendingVersionUpdated is false it means that tblVersion has been changed
       // and hence we didn't update the pendingVersion. We retry once to acquire a read
@@ -1897,11 +1890,12 @@ public class CatalogServiceCatalog extends Catalog {
     // if applicable.
     TopicUpdateLog.Entry topicUpdateEntry = topicUpdateLog_
         .getOrCreateLogEntry(tbl.getUniqueName());
+    long lastSeen = getLastVersionSeenByTopicUpdate(tbl);
     LOG.info(
         "Table {} (version={}, lastSeen={}) is skipping topic update ({}, {}] "
             + "due to lock contention", tbl.getFullName(), tblVersion,
-        hdfsTable.getLastVersionSeenByTopicUpdate(), ctx.fromVersion, ctx.toVersion);
-    if (hdfsTable.getLastVersionSeenByTopicUpdate() != tblVersion) {
+        lastSeen, ctx.fromVersion, ctx.toVersion);
+    if (lastSeen != tblVersion) {
       // if the last version skipped by topic update is not same as the last version
       // sent, it means the table was updated and topic update thread is lagging
       // behind.
@@ -1914,9 +1908,32 @@ public class CatalogServiceCatalog extends Catalog {
       // we keep track of the table version when topic update thread had to skip the
       // table from updates so that next iteration can determine if we need to
       // increment the lock contention counter in topic update entry again.
-      hdfsTable.setLastVersionSeenByTopicUpdate(tblVersion);
+      setLastVersionSeenByTopicUpdate(tbl, tblVersion);
     }
     return false;
+  }
+
+  private static boolean updatePendingVersion(Table tbl, long expectedVersion,
+      long newPendingVersion) {
+    if (tbl instanceof IcebergTable) {
+      return ((IcebergTable) tbl).updatePendingVersion(expectedVersion, newPendingVersion);
+    }
+    return ((HdfsTable) tbl).updatePendingVersion(expectedVersion, newPendingVersion);
+  }
+
+  private static long getLastVersionSeenByTopicUpdate(Table tbl) {
+    if (tbl instanceof IcebergTable) {
+      return ((IcebergTable) tbl).getLastVersionSeenByTopicUpdate();
+    }
+    return ((HdfsTable) tbl).getLastVersionSeenByTopicUpdate();
+  }
+
+  private static void setLastVersionSeenByTopicUpdate(Table tbl, long version) {
+    if (tbl instanceof IcebergTable) {
+      ((IcebergTable) tbl).setLastVersionSeenByTopicUpdate(version);
+    } else {
+      ((HdfsTable) tbl).setLastVersionSeenByTopicUpdate(version);
+    }
   }
 
   /**

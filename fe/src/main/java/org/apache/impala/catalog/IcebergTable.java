@@ -255,15 +255,14 @@ public class IcebergTable extends Table implements FeIcebergTable {
   // File descriptor store of all data and delete files.
   private IcebergContentFileStore fileStore_;
 
-  // Treat iceberg table as a non-partitioned hdfs table in backend
-  private HdfsTable hdfsTable_;
-
-  // Direct fields replacing hdfsTable_ delegation (Phase 1 of dummy partition removal).
-  // These coexist with hdfsTable_ during transition; hdfsTable_ will be removed in Phase 2.
   private ListMap<TNetworkAddress> hostIndex_ = new ListMap<>();
   private IcebergSyntheticPartition syntheticPartition_;
   private String avroSchema_;
   private boolean isMarkedCached_;
+
+  private final Object pendingVersionLock_ = new Object();
+  private long pendingVersionNumber_ = -1;
+  private long lastVersionSeenByTopicUpdate_ = -1;
 
   // Cached Iceberg API table object.
   private org.apache.iceberg.Table icebergApiTable_;
@@ -303,7 +302,6 @@ public class IcebergTable extends Table implements FeIcebergTable {
     icebergParquetRowGroupSize_ = Utils.getIcebergParquetRowGroupSize(msTable);
     icebergParquetPlainPageSize_ = Utils.getIcebergParquetPlainPageSize(msTable);
     icebergParquetDictPageSize_ = Utils.getIcebergParquetDictPageSize(msTable);
-    hdfsTable_ = new HdfsTable(msTable, db, name, owner);
     icebergFieldIdToCol_ = new HashMap<>();
   }
 
@@ -326,10 +324,6 @@ public class IcebergTable extends Table implements FeIcebergTable {
     return msTbl.getTableType().equalsIgnoreCase(TableType.MANAGED_TABLE.toString());
   }
 
-  public HdfsTable getHdfsTable() {
-    return hdfsTable_;
-  }
-
   @Override
   public org.apache.iceberg.Table getIcebergApiTable() {
     return icebergApiTable_;
@@ -342,12 +336,31 @@ public class IcebergTable extends Table implements FeIcebergTable {
 
   @Override
   public void setCatalogVersion(long newVersion) {
-    // We use 'hdfsTable_' to answer CatalogServiceCatalog.doGetPartialCatalogObject(), so
-    // its version number needs to be updated as well.
-    // Use setCatalogVersionAndGet() to atomically apply pendingVersion promotion in
-    // HdfsTable and get back the effective version in a single synchronized block
-    long effectiveVersion = hdfsTable_.setCatalogVersionAndGet(newVersion);
-    super.setCatalogVersion(effectiveVersion);
+    synchronized (pendingVersionLock_) {
+      long versionToBeSet = newVersion;
+      if (pendingVersionNumber_ > newVersion) {
+        versionToBeSet = pendingVersionNumber_;
+      }
+      super.setCatalogVersion(versionToBeSet);
+    }
+  }
+
+  public boolean updatePendingVersion(long expectedTblVersion, long newPendingVersion) {
+    synchronized (pendingVersionLock_) {
+      if (expectedTblVersion == getCatalogVersion()) {
+        pendingVersionNumber_ = newPendingVersion;
+        return true;
+      }
+      return false;
+    }
+  }
+
+  public long getLastVersionSeenByTopicUpdate() {
+    return lastVersionSeenByTopicUpdate_;
+  }
+
+  public void setLastVersionSeenByTopicUpdate(long version) {
+    lastVersionSeenByTopicUpdate_ = version;
   }
 
   @Override
@@ -412,10 +425,9 @@ public class IcebergTable extends Table implements FeIcebergTable {
 
   @Override
   public FeFsTable getFeFsTable() {
-    return hdfsTable_;
+    throw new UnsupportedOperationException(
+        "IcebergTable no longer wraps an HdfsTable. Use FeScannable methods directly.");
   }
-
-  // --- Direct field overrides (bypass getFeFsTable() delegation) ---
 
   @Override
   public ListMap<TNetworkAddress> getHostIndex() { return hostIndex_; }

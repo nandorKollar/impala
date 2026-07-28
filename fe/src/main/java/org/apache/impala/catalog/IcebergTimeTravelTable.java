@@ -268,7 +268,8 @@ class ForwardingFeIcebergTable implements FeIcebergTable {
 
   @Override
   public FeFsTable getFeFsTable() {
-    return base.getFeFsTable();
+    throw new UnsupportedOperationException(
+        "IcebergTimeTravelTable does not wrap an FeFsTable. Use FeScannable methods.");
   }
 
   @Override
