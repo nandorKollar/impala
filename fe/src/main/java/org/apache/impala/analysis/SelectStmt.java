@@ -1545,7 +1545,9 @@ public class SelectStmt extends QueryStmt {
     analyzer_.checkStmtExprLimit();
     FeIcebergTable iceTable = ((FeIcebergTable) table);
     if (Utils.hasDeleteFiles(iceTable, tableRef.getTimeTravelSpec())) {
-      optimizePlainCountStarQueryV2(tableRef, iceTable);
+      if (!optimizePlainCountStarQueryV3(tableRef, iceTable)) {
+        optimizePlainCountStarQueryV2(tableRef, iceTable);
+      }
     } else {
       optimizePlainCountStarQueryV1(tableRef, iceTable.getIcebergApiTable());
     }
@@ -1572,6 +1574,24 @@ public class SelectStmt extends QueryStmt {
       tableRef.setOptimizeCountStarForIcebergV2(true);
       if (!alreadyOptimized) analyzer_.setTotalRecordsNumV2(num);
     }
+  }
+
+  private boolean optimizePlainCountStarQueryV3(TableRef tableRef, FeIcebergTable table)
+      throws AnalysisException {
+    boolean hasCountStarFunc = false;
+    for (SelectListItem selectItem : getSelectList().getItems()) {
+      Expr expr = selectItem.getExpr();
+      if (expr == null) return false;
+      if (expr.isConstant()) continue;
+      if (!FunctionCallExpr.isCountStarFunctionCallExpr(expr)) return false;
+      hasCountStarFunc = true;
+    }
+    if (!hasCountStarFunc) return false;
+    long num = Utils.getRecordCountV3(table, tableRef.getTimeTravelSpec());
+    if (num <= 0) return false;
+    analyzer_.setTotalRecordsNumV1(num);
+    fromClause_.getTableRefs().clear();
+    return true;
   }
 
   private void optimizePlainCountStarQueryV1(TableRef tableRef, Table iceTable) {

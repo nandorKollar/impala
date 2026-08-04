@@ -50,6 +50,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.iceberg.BaseTable;
 import org.apache.iceberg.ContentFile;
+import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DeleteFile;
 import org.apache.iceberg.expressions.Expression;
 import org.apache.iceberg.FileContent;
@@ -85,6 +86,7 @@ import org.apache.impala.thrift.THdfsFileDesc;
 import org.apache.impala.thrift.THdfsPartition;
 import org.apache.impala.thrift.THdfsTable;
 import org.apache.impala.thrift.TIcebergCatalog;
+import org.apache.impala.thrift.TIcebergDeletionVector;
 import org.apache.impala.thrift.TIcebergFileFormat;
 import org.apache.impala.thrift.TIcebergPartitionStats;
 import org.apache.impala.thrift.TIcebergPartitionTransformType;
@@ -1203,6 +1205,59 @@ public interface FeIcebergTable extends FeFsTable {
       } catch (TableLoadingException e) {
         throw new AnalysisException("Failed to get record count of Iceberg V2 table: "
             + table.getFullName() ,e);
+      }
+    }
+
+    /**
+     * Return the exact record count for Iceberg V3 tables where ALL deletes are
+     * Deletion Vectors with known record counts.
+     * Formula: sum(all data files recordCount) - sum(all DV recordCounts).
+     * Returns -1 if the V3 optimization is not applicable.
+     */
+    public static long getRecordCountV3(FeIcebergTable table, TimeTravelSpec travelSpec)
+        throws AnalysisException {
+      if (travelSpec == null) {
+        IcebergContentFileStore fileStore = table.getContentFileStore();
+        if (!fileStore.getPositionDeleteFiles().isEmpty()) return -1;
+        if (!fileStore.getEqualityDeleteFiles().isEmpty()) return -1;
+        Map<Hash128, TIcebergDeletionVector> dvMap = fileStore.getDataFileToDV();
+        if (dvMap.isEmpty()) return -1;
+
+        long dvRecordCount = 0;
+        for (TIcebergDeletionVector dv : dvMap.values()) {
+          if (!dv.isSetRecord_count()) return -1;
+          dvRecordCount += dv.getRecord_count();
+        }
+
+        long totalDataRecords = 0;
+        for (IcebergFileDescriptor fd : fileStore.getAllDataFiles()) {
+          totalDataRecords += fd.getFbFileMetadata().icebergMetadata().recordCount();
+        }
+        return totalDataRecords - dvRecordCount;
+      }
+      try {
+        GroupedContentFiles groupedFiles =
+            IcebergUtil.getIcebergFiles(table, Lists.newArrayList(), travelSpec);
+        if (!groupedFiles.positionDeleteFiles.isEmpty()) return -1;
+        if (!groupedFiles.equalityDeleteFiles.isEmpty()) return -1;
+        if (groupedFiles.dataFileToDV.isEmpty()) return -1;
+
+        long dvRecordCount = 0;
+        for (DeleteFile dvFile : groupedFiles.dataFileToDV.values()) {
+          dvRecordCount += dvFile.recordCount();
+        }
+
+        long totalDataRecords = 0;
+        for (DataFile df : groupedFiles.dataFilesWithoutDeletes) {
+          totalDataRecords += df.recordCount();
+        }
+        for (DataFile df : groupedFiles.dataFilesWithDeletes) {
+          totalDataRecords += df.recordCount();
+        }
+        return totalDataRecords - dvRecordCount;
+      } catch (TableLoadingException e) {
+        throw new AnalysisException(
+            "Failed to get record count of Iceberg V3 table: " + table.getFullName(), e);
       }
     }
 

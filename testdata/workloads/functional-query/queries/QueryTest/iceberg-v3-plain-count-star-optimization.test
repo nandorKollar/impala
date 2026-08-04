@@ -19,15 +19,16 @@ NumModifiedRows: 0
 NumDeletedRows: 1
 ====
 ---- QUERY
-# count(*) optimization should work: only scan the data file with the DV,
-# not the one without (its count is derived from metadata).
+# count(*) optimization should work: all deletes are DVs with known record counts,
+# so the count is computed entirely from metadata (no scan needed).
 select count(*) from ice_v3_count;
 ---- RESULTS
 5
 ---- TYPES
 BIGINT
 ---- RUNTIME_PROFILE
-aggregation(SUM, NumRowGroups): 1
+aggregation(SUM, NumRowGroups): 0
+aggregation(SUM, NumFileMetadataRead): 0
 ====
 ---- QUERY
 select count(*), 42 from ice_v3_count;
@@ -36,7 +37,20 @@ select count(*), 42 from ice_v3_count;
 ---- TYPES
 BIGINT,TINYINT
 ---- RUNTIME_PROFILE
-aggregation(SUM, NumRowGroups): 1
+aggregation(SUM, NumRowGroups): 0
+aggregation(SUM, NumFileMetadataRead): 0
+====
+---- QUERY
+# Expression wrapping count(*): the V3 optimization only kicks in for bare count(*)
+# in the select list. Wrapped expressions still need a scan (same as V2).
+select count(*) + 1000 from ice_v3_count;
+---- RESULTS
+1005
+---- TYPES
+BIGINT
+---- RUNTIME_PROFILE
+aggregation(SUM, NumRowGroups): 2
+aggregation(SUM, NumFileMetadataRead): 0
 ====
 ---- QUERY
 # IMPALA-14993: SELECT with only constants must not activate the optimization.
@@ -61,4 +75,116 @@ select i from ice_v3_count order by i;
 6
 ---- TYPES
 INT
+====
+====
+---- QUERY
+# WHERE clause must disable the optimization and scan.
+select count(*) from ice_v3_count where i > 3;
+---- RESULTS
+3
+---- TYPES
+BIGINT
+---- RUNTIME_PROFILE
+aggregation(SUM, NumRowGroups): 2
+aggregation(SUM, NumFileMetadataRead): 0
+====
+---- QUERY
+# GROUP BY must disable the optimization and scan.
+select count(*) from ice_v3_count group by s order by s;
+---- RESULTS
+1
+1
+1
+1
+1
+---- TYPES
+BIGINT
+---- RUNTIME_PROFILE
+aggregation(SUM, NumRowGroups): 2
+aggregation(SUM, NumFileMetadataRead): 0
+====
+---- QUERY
+# count(distinct col) must disable the optimization and scan.
+select count(distinct i) from ice_v3_count;
+---- RESULTS
+5
+---- TYPES
+BIGINT
+---- RUNTIME_PROFILE
+aggregation(SUM, NumRowGroups): 2
+aggregation(SUM, NumFileMetadataRead): 0
+====
+---- QUERY
+# Non-count aggregate (sum) alongside count(*) must disable the optimization and scan.
+select sum(i), count(*) from ice_v3_count;
+---- RESULTS
+19,5
+---- TYPES
+BIGINT,BIGINT
+---- RUNTIME_PROFILE
+aggregation(SUM, NumRowGroups): 2
+aggregation(SUM, NumFileMetadataRead): 0
+====
+---- QUERY
+# Disable the optimization via query option.
+set iceberg_disable_count_star_optimization=true;
+select count(*) from ice_v3_count;
+---- RESULTS
+5
+---- TYPES
+BIGINT
+---- RUNTIME_PROFILE
+aggregation(SUM, NumRowGroups): 2
+aggregation(SUM, NumFileMetadataRead): 0
+====
+---- QUERY
+# UNION ALL with multiple count(*) subqueries should optimize each independently.
+CREATE TABLE ice_v3_count2 (x int)
+STORED BY ICEBERG
+TBLPROPERTIES ('format-version'='3');
+INSERT INTO ice_v3_count2 VALUES (10), (20), (30);
+DELETE FROM ice_v3_count2 WHERE x = 20;
+====
+---- QUERY
+select count(*) as c from ice_v3_count
+union all
+(select count(*) as c from ice_v3_count2)
+order by c;
+---- RESULTS
+2
+5
+---- TYPES
+BIGINT
+---- RUNTIME_PROFILE
+aggregation(SUM, NumRowGroups): 0
+aggregation(SUM, NumFileMetadataRead): 0
+====
+---- QUERY
+# WITH clause wrapping count(*) should optimize.
+with cte as (select count(*) as c from ice_v3_count)
+select c from cte;
+---- RESULTS
+5
+---- TYPES
+BIGINT
+---- RUNTIME_PROFILE
+aggregation(SUM, NumRowGroups): 0
+aggregation(SUM, NumFileMetadataRead): 0
+====
+---- QUERY
+# V3 table without any deletes should use V1 optimization (from snapshot summary).
+CREATE TABLE ice_v3_no_deletes (j int)
+STORED BY ICEBERG
+TBLPROPERTIES ('format-version'='3');
+INSERT INTO ice_v3_no_deletes VALUES (1), (2), (3);
+====
+---- QUERY
+select count(*) from ice_v3_no_deletes;
+---- RESULTS
+3
+---- TYPES
+BIGINT
+---- RUNTIME_PROFILE
+aggregation(SUM, NumRowGroups): 0
+aggregation(SUM, NumFileMetadataRead): 0
 ====
