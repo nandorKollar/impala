@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.nio.ByteBuffer;
 
@@ -40,13 +41,12 @@ import org.apache.impala.catalog.FileDescriptor;
 import org.apache.impala.catalog.HdfsFileFormat;
 import org.apache.impala.catalog.IcebergFileDescriptor;
 import org.apache.impala.catalog.Type;
-import org.apache.impala.common.ImpalaRuntimeException;
 import org.apache.impala.common.ThriftSerializationCtx;
-import org.apache.impala.fb.FbIcebergDataFileFormat;
 import org.apache.impala.fb.FbIcebergDeletionVector;
 import org.apache.impala.thrift.TExplainLevel;
 import org.apache.impala.thrift.TFileSplitGeneratorSpec;
 import org.apache.impala.thrift.TIcebergDeletionVector;
+import org.apache.impala.thrift.TIcebergFileFormat;
 import org.apache.impala.thrift.TPlanNode;
 import org.apache.impala.thrift.TScanRange;
 import org.apache.impala.util.Hash128;
@@ -109,9 +109,10 @@ public class IcebergScanNode extends HdfsScanNode {
       int numPartitions,
       List<Expr> nonIdentityConjuncts, List<Expr> skippedConjuncts, long snapshotId,
       boolean isPartitionKeyScan, Map<Hash128, TIcebergDeletionVector> dataFileToDV,
-      ScanNodeHelper helper) {
+      Set<TIcebergFileFormat> fileFormats, ScanNodeHelper helper) {
     this(id, tblRef, conjuncts, aggInfo, fileDescs, numPartitions, nonIdentityConjuncts,
-        skippedConjuncts, null, snapshotId, isPartitionKeyScan, dataFileToDV, helper);
+        skippedConjuncts, null, snapshotId, isPartitionKeyScan, dataFileToDV, fileFormats,
+        helper);
   }
 
   public IcebergScanNode(PlanNodeId id, TableRef tblRef, List<Expr> conjuncts,
@@ -120,7 +121,8 @@ public class IcebergScanNode extends HdfsScanNode {
       List<Expr> nonIdentityConjuncts, List<Expr> skippedConjuncts,
       PlanNodeId deleteId,
       long snapshotId, boolean isPartitionKeyScan,
-      Map<Hash128, TIcebergDeletionVector> dataFileToDV, ScanNodeHelper helper) {
+      Map<Hash128, TIcebergDeletionVector> dataFileToDV,
+      Set<TIcebergFileFormat> fileFormats, ScanNodeHelper helper) {
     super(id, tblRef.getDesc(), conjuncts,
         getIcebergPartition(((FeIcebergTable)tblRef.getTable()).getFeFsTable()), tblRef,
         aggInfo, null, isPartitionKeyScan, helper);
@@ -135,8 +137,7 @@ public class IcebergScanNode extends HdfsScanNode {
       // Create a clone of the original file descriptor list to avoid getting
       // ConcurrentModificationException when sorting.
       fileDescs_ = new ArrayList<>(fileDescs_);
-      Collections.sort(fileDescs_,
-          (IcebergFileDescriptor a, IcebergFileDescriptor b) -> a.byteBufferCompareTo(b));
+      Collections.sort(fileDescs_, FileDescriptor::byteBufferCompareTo);
       filesAreSorted_ = true;
     }
     nonIdentityConjuncts_ = nonIdentityConjuncts;
@@ -144,6 +145,15 @@ public class IcebergScanNode extends HdfsScanNode {
     this.skippedConjuncts_ = skippedConjuncts;
     this.deleteFileScanNodeId = deleteId;
     this.dataFileToDV_ = dataFileToDV;
+    fileFormats.stream().map(this::convertFileFormat).forEach(fileFormats_::add);
+  }
+
+  private HdfsFileFormat convertFileFormat(TIcebergFileFormat tIcebergFileFormat) {
+    return switch (tIcebergFileFormat) {
+      case PARQUET -> HdfsFileFormat.PARQUET;
+      case ORC -> HdfsFileFormat.ORC;
+      case AVRO -> HdfsFileFormat.AVRO;
+    };
   }
 
   /**
@@ -317,27 +327,9 @@ public class IcebergScanNode extends HdfsScanNode {
   }
 
   @Override
-  protected void populateFileFormats() throws ImpalaRuntimeException {
-    //TODO IMPALA-11577: optimize file format counting
-    boolean hasParquet = false;
-    boolean hasOrc = false;
-    boolean hasAvro = false;
-    for (IcebergFileDescriptor fileDesc : fileDescs_) {
-      byte fileFormat = fileDesc.getFbFileMetadata().icebergMetadata().fileFormat();
-      if (fileFormat == FbIcebergDataFileFormat.PARQUET) {
-        hasParquet = true;
-      } else if (fileFormat == FbIcebergDataFileFormat.ORC) {
-        hasOrc = true;
-      } else if (fileFormat == FbIcebergDataFileFormat.AVRO) {
-        hasAvro = true;
-      } else {
-        throw new ImpalaRuntimeException(String.format(
-            "Invalid Iceberg file format of file: %s", fileDesc.getAbsolutePath()));
-      }
-    }
-    if (hasParquet) fileFormats_.add(HdfsFileFormat.PARQUET);
-    if (hasOrc) fileFormats_.add(HdfsFileFormat.ORC);
-    if (hasAvro) fileFormats_.add(HdfsFileFormat.AVRO);
+  protected void populateFileFormats() {
+    // Already populated in the constructor from precomputed formats.
+    // Override base class implementation with empty body.
   }
 
   @Override

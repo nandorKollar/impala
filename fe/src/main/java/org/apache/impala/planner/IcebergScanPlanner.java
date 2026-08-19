@@ -18,7 +18,6 @@
 package org.apache.impala.planner;
 
 import com.google.common.base.Joiner;
-import static org.apache.impala.util.IcebergUtil.getFilePathHash;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -28,6 +27,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -95,6 +95,7 @@ import org.apache.impala.planner.JoinNode.DistributionMode;
 import org.apache.impala.service.Frontend;
 import org.apache.impala.thrift.TColumnStats;
 import org.apache.impala.thrift.TIcebergDeletionVector;
+import org.apache.impala.thrift.TIcebergFileFormat;
 import org.apache.impala.thrift.TIcebergPartitionTransformType;
 import org.apache.impala.thrift.TQueryOptions;
 import org.apache.impala.thrift.TVirtualColumnType;
@@ -141,6 +142,9 @@ public class IcebergScanPlanner {
   private List<IcebergFileDescriptor> dataFilesWithDeletes_ = new ArrayList<>();
   private Set<IcebergFileDescriptor> positionDeleteFiles_ = new HashSet<>();
   public Map<Hash128, TIcebergDeletionVector> dataFileToDV_ = new HashMap<>();
+
+  // File formats present in the data files selected for scanning.
+  private Set<TIcebergFileFormat> fileFormats_ = EnumSet.noneOf(TIcebergFileFormat.class);
 
   // Holds all the equalityFieldIds from the equality delete file descriptors involved in
   // this query.
@@ -262,6 +266,7 @@ public class IcebergScanPlanner {
     positionDeleteFiles_ = new HashSet<>(fileStore.getPositionDeleteFiles());
     dataFileToDV_ = fileStore.getDataFileToDV();
     initEqualityIds(fileStore.getEqualityDeleteFiles());
+    fileFormats_ = fileStore.getFileFormats();
 
     updateDeleteStatistics();
   }
@@ -285,7 +290,8 @@ public class IcebergScanPlanner {
           aggInfo_, dataFilesWithoutDeletes_,
           getIceTable().getContentFileStore().getNumPartitions(),
           nonIdentityConjuncts_,
-          getSkippedConjuncts(), snapshotId_, isPartitionKeyScan, dataFileToDV_, helper_);
+          getSkippedConjuncts(), snapshotId_, isPartitionKeyScan, dataFileToDV_,
+          fileFormats_, helper_);
       ret.init(analyzer_);
       return ret;
     }
@@ -313,7 +319,7 @@ public class IcebergScanPlanner {
         ctx_.getNextNodeId(), tblRef_, conjuncts_, aggInfo_, dataFilesWithoutDeletes_,
         getIceTable().getContentFileStore().getNumPartitions(),
         nonIdentityConjuncts_, getSkippedConjuncts(), snapshotId_,
-        isPartitionKeyScan, dataFileToDV_, helper_);
+        isPartitionKeyScan, dataFileToDV_, fileFormats_, helper_);
     // These data files have no deletes, so they don't go through the IcebergDeleteNode
     // that NULLs out the file path slot. If that slot was materialized only as a join key
     // (clearFilePathSlot_), NULL it out here too so the file path string isn't propagated
@@ -378,7 +384,7 @@ public class IcebergScanPlanner {
         dataScanNodeId, tblRef_, conjuncts_, aggInfo_, dataFilesWithDeletes_,
         getIceTable().getContentFileStore().getNumPartitions(),
         nonIdentityConjuncts_, getSkippedConjuncts(), deleteScanNodeId, snapshotId_,
-        false /*isPartitionKeyScan*/, dataFileToDV_, helper_);
+        false /*isPartitionKeyScan*/, dataFileToDV_, fileFormats_, helper_);
     dataScanNode.init(analyzer_);
     IcebergScanNode deleteScanNode = new IcebergScanNode(
         deleteScanNodeId,
@@ -390,7 +396,7 @@ public class IcebergScanPlanner {
         Collections.emptyList(), /*nonIdentityConjuncts*/
         Collections.emptyList(), /*skippedConjuncts*/
         snapshotId_,
-        false /*isPartitionKeyScan*/, dataFileToDV_, helper_);
+        false /*isPartitionKeyScan*/, dataFileToDV_, fileFormats_, helper_);
     deleteScanNode.init(analyzer_);
 
     // Now let's create the JOIN node
@@ -615,7 +621,7 @@ public class IcebergScanPlanner {
           dataScanNodeId, tblRef_, conjuncts_, aggInfo_, dataFilesWithDeletes_,
           getIceTable().getContentFileStore().getNumPartitions(),
           nonIdentityConjuncts_, getSkippedConjuncts(), snapshotId_,
-          false /*isPartitionKeyScan*/, dataFileToDV_, helper_);
+          false /*isPartitionKeyScan*/, dataFileToDV_, fileFormats_, helper_);
       addAllSlotsForEqualityDeletes(tblRef_);
       dataScanNode.init(analyzer_);
 
@@ -656,7 +662,8 @@ public class IcebergScanPlanner {
           getIceTable().getContentFileStore().getNumPartitions(),
           Collections.emptyList(), /*nonIdentityConjuncts*/
           Collections.emptyList(), /*skippedConjuncts*/
-          snapshotId_, false /*isPartitionKeyScan*/, dataFileToDV_, helper_);
+          snapshotId_, false /*isPartitionKeyScan*/, dataFileToDV_, fileFormats_,
+          helper_);
       deleteScanNode.init(analyzer_);
 
       Pair<List<BinaryPredicate>, List<Expr>> equalityJoinConjuncts =
@@ -732,6 +739,7 @@ public class IcebergScanPlanner {
         Pair<IcebergFileDescriptor, Boolean> fileDesc =
             getFileDescriptor(dataFile, fileStore);
         if (!fileDesc.second) ++dataFilesCacheMisses;
+        updateFileFormats(dataFile.format());
         if (fileScanTask.deletes().isEmpty()) {
           dataFilesWithoutDeletes_.add(fileDesc.first);
         } else {
@@ -843,6 +851,15 @@ public class IcebergScanPlanner {
     return impalaIcebergPredicateMapping_.values().stream()
         .filter(expr -> !relaxedExpressions_.contains(expr))
         .collect(Collectors.toList());
+  }
+
+  private void updateFileFormats(FileFormat format) {
+    switch (format) {
+      case PARQUET: fileFormats_.add(TIcebergFileFormat.PARQUET); break;
+      case ORC: fileFormats_.add(TIcebergFileFormat.ORC); break;
+      case AVRO: fileFormats_.add(TIcebergFileFormat.AVRO); break;
+      default: break;
+    }
   }
 
   private void updateDeleteStatistics() {

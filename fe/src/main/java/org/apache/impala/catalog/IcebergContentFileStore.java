@@ -26,6 +26,7 @@ import com.google.common.collect.Lists;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -51,6 +52,7 @@ import org.apache.impala.thrift.THash128;
 import org.apache.impala.thrift.THdfsFileDesc;
 import org.apache.impala.thrift.TIcebergContentFileStore;
 import org.apache.impala.thrift.TIcebergDeletionVector;
+import org.apache.impala.thrift.TIcebergFileFormat;
 import org.apache.impala.thrift.TNetworkAddress;
 import org.apache.impala.util.Hash128;
 import org.apache.impala.util.IcebergUtil;
@@ -135,7 +137,7 @@ public class IcebergContentFileStore {
     }
 
     List<IcebergFileDescriptor> getList() {
-      return Lists.transform(fileDescList_, fd -> IcebergContentFileStore.decode(fd));
+      return Lists.transform(fileDescList_, IcebergContentFileStore::decode);
     }
 
     // Clear cached objects that are derived from the map and list, to ensure they will be
@@ -225,9 +227,7 @@ public class IcebergContentFileStore {
   private List<ByteBuffer> partitionList_ = null;
 
   // Flags to indicate file formats used in the table.
-  private boolean hasAvro_ = false;
-  private boolean hasOrc_ = false;
-  private boolean hasParquet_ = false;
+  private EnumSet<TIcebergFileFormat> fileFormats_ = EnumSet.noneOf(TIcebergFileFormat.class);
 
   // END: immutable members
   /////////////////////////////////////////
@@ -301,9 +301,7 @@ public class IcebergContentFileStore {
     ret.missingFiles_ = missingFiles_;
     ret.partitionMap_ = partitionMap_;
     ret.partitionList_ = partitionList_;
-    ret.hasAvro_ = hasAvro_;
-    ret.hasOrc_ = hasOrc_;
-    ret.hasParquet_ = hasParquet_;
+    ret.fileFormats_ = fileFormats_;
     return ret;
   }
 
@@ -503,20 +501,18 @@ public class IcebergContentFileStore {
         equalityDeleteFiles_.getList());
   }
 
-  public boolean hasAvro() { return hasAvro_; }
-  public boolean hasOrc() { return hasOrc_; }
-  public boolean hasParquet() { return hasParquet_; }
+  public boolean hasAvro() { return fileFormats_.contains(TIcebergFileFormat.AVRO); }
 
   private void updateFileFormats(FbIcebergMetadata icebergMetadata) {
     Preconditions.checkNotNull(icebergMetadata);
 
     byte fileFormat = icebergMetadata.fileFormat();
     if (fileFormat == FbIcebergDataFileFormat.PARQUET) {
-      hasParquet_ = true;
+      fileFormats_.add(TIcebergFileFormat.PARQUET);
     } else if (fileFormat == FbIcebergDataFileFormat.ORC) {
-      hasOrc_ = true;
+      fileFormats_.add(TIcebergFileFormat.ORC);
     } else if (fileFormat == FbIcebergDataFileFormat.AVRO) {
-      hasAvro_ = true;
+      fileFormats_.add(TIcebergFileFormat.AVRO);
     }
   }
 
@@ -578,9 +574,7 @@ public class IcebergContentFileStore {
     if (!m.isEmpty()) ret.setPath_hash_to_position_delete_file(m);
     m = equalityDeleteFiles_.toThrift();
     if (!m.isEmpty()) ret.setPath_hash_to_equality_delete_file(m);
-    ret.setHas_avro(hasAvro_);
-    ret.setHas_orc(hasOrc_);
-    ret.setHas_parquet(hasParquet_);
+    ret.setFile_formats(fileFormats_);
     ret.setMissing_files(new ArrayList<>(missingFiles_));
     ret.setPartitions(convertPartitionMapToList(partitionMap_, 0));
     Map<THash128, TIcebergDeletionVector> tdeletion_vectors = new HashMap<>();
@@ -645,9 +639,7 @@ public class IcebergContentFileStore {
 
     // Only include metadata in first request to reduce response size
     if (startOffset == 0) {
-      ret.setHas_avro(hasAvro_);
-      ret.setHas_orc(hasOrc_);
-      ret.setHas_parquet(hasParquet_);
+      ret.setFile_formats(fileFormats_);
       ret.setMissing_files(new ArrayList<>(missingFiles_));
       ret.setPartitions(convertPartitionMapToList(partitionMap_, 0));
       Map<THash128, TIcebergDeletionVector> tdeletion_vectors = new HashMap<>();
@@ -690,9 +682,8 @@ public class IcebergContentFileStore {
         ret.dataFileToDV_.put(Hash128.fromThrift(entry.getKey()), entry.getValue());
       }
     }
-    ret.hasAvro_ = tFileStore.isSetHas_avro() ? tFileStore.isHas_avro() : false;
-    ret.hasOrc_ = tFileStore.isSetHas_orc() ? tFileStore.isHas_orc() : false;
-    ret.hasParquet_ = tFileStore.isSetHas_parquet() ? tFileStore.isHas_parquet() : false;
+    ret.fileFormats_ = tFileStore.isSetFile_formats() && !tFileStore.getFile_formats().isEmpty() ?
+      EnumSet.copyOf(tFileStore.getFile_formats()) : EnumSet.noneOf(TIcebergFileFormat.class);
     ret.missingFiles_ = tFileStore.isSetMissing_files() ?
         new HashSet<>(tFileStore.getMissing_files()) : Collections.emptySet();
     // Call copyBinary to avoid referencing the whole transport buffer in ByteBuffers.
@@ -785,5 +776,10 @@ public class IcebergContentFileStore {
       baseContentFiles.data_path_hash_to_dv.putAll(
           nextContentFiles.data_path_hash_to_dv);
     }
+  }
+
+  public EnumSet<TIcebergFileFormat> getFileFormats() {
+    return fileFormats_.isEmpty() ?
+      EnumSet.noneOf(TIcebergFileFormat.class) : EnumSet.copyOf(fileFormats_);
   }
 }

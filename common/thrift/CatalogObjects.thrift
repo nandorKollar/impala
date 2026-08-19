@@ -674,9 +674,7 @@ struct TIcebergContentFileStore {
   2: optional map<THash128, THdfsFileDesc> path_hash_to_data_file_with_deletes
   3: optional map<THash128, THdfsFileDesc> path_hash_to_position_delete_file
   4: optional map<THash128, THdfsFileDesc> path_hash_to_equality_delete_file
-  5: optional bool has_avro
-  6: optional bool has_orc
-  7: optional bool has_parquet
+  5: optional set<TIcebergFileFormat> file_formats
   8: optional list<string> missing_files
   // Partition metadata serialized into a FlatBuffer
   // (FbIcebergPartition defined in common/fbs/IcebergObjects.fbs).

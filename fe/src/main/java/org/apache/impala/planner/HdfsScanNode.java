@@ -548,7 +548,7 @@ public class HdfsScanNode extends ScanNode {
         helper_.getCountStarOptimizationDescriptor(this, analyzer, conjuncts_);
   }
 
-  protected void populateFileFormats() throws ImpalaRuntimeException {
+  protected void populateFileFormats() {
     for (FeFsPartition partition : getSampledOrRawPartitions()) {
       if (partition.getFileFormat() != HdfsFileFormat.ICEBERG) {
         fileFormats_.add(partition.getFileFormat());
