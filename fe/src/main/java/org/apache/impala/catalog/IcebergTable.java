@@ -711,27 +711,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
     if (val == null) return true;
     return Boolean.parseBoolean(val);
   }
-
-  private long getLastComputeStatsTimeMs() {
-    String val = msTable_.getParameters().get(Table.TBL_PROP_LAST_COMPUTE_STATS_TIME);
-    try {
-      return Long.parseLong(val) * 1000;
-    } catch (Exception e) {
-      return -1;
-    }
-  }
-
-  private Set<Integer> collectFieldIdsWithNdvStats() {
-    Set<Integer> res = new HashSet<>();
-    for (Column col : colsByPos_) {
-      if (col.getStats().hasNumDistinctValues()) {
-        IcebergColumn iCol = (IcebergColumn) col;
-        res.add(iCol.getFieldId());
-      }
-    }
-    return res;
-  }
-
+  
   /**
    * @throws TableLoadingException when it is unsafe to load the table.
    */

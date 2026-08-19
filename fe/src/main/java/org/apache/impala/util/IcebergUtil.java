@@ -179,13 +179,12 @@ public class IcebergUtil {
    */
   public static IcebergCatalog getIcebergCatalog(TIcebergCatalog catalog, String location)
       throws ImpalaRuntimeException {
-    switch (catalog) {
-      case HADOOP_TABLES: return IcebergHadoopTables.getInstance();
-      case HIVE_CATALOG: return IcebergHiveCatalog.getInstance();
-      case HADOOP_CATALOG: return new IcebergHadoopCatalog(location);
-      case CATALOGS: return IcebergCatalogUtil.getInstance();
-      default: throw new ImpalaRuntimeException("Unexpected catalog type: " + catalog);
-    }
+    return switch (catalog) {
+      case HADOOP_TABLES -> IcebergHadoopTables.getInstance();
+      case HIVE_CATALOG -> IcebergHiveCatalog.getInstance();
+      case HADOOP_CATALOG -> IcebergHadoopCatalog.getInstance(location);
+      case CATALOGS -> IcebergCatalogUtil.getInstance();
+    };
   }
 
   /**
