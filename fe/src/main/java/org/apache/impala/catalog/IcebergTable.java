@@ -937,13 +937,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
 
   public THdfsTable transformToTHdfsTable(boolean updatePartitionFlag,
       ThriftObjectType type) {
-    THdfsTable hdfsTable = hdfsTable_.getTHdfsTable(type, null);
-    if (updatePartitionFlag) {
-      // Iceberg table only has one THdfsPartition, we set this partition
-      // file format by iceberg file format which depend on table properties
-      Utils.updateIcebergPartitionFileFormat(this, hdfsTable);
-    }
-    return hdfsTable;
+    return buildSyntheticTHdfsTable(type);
   }
 
   /**
