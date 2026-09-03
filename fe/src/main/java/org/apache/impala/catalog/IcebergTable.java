@@ -35,16 +35,19 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.metastore.IMetaStoreClient;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.hive_metastoreConstants;
 import org.apache.iceberg.BaseTable;
 import org.apache.iceberg.Snapshot;
+import org.apache.impala.analysis.LiteralExpr;
 import org.apache.impala.analysis.IcebergPartitionField;
 import org.apache.impala.analysis.IcebergPartitionSpec;
 import org.apache.impala.analysis.IcebergPartitionTransform;
 import org.apache.impala.catalog.iceberg.GroupedContentFiles;
 import org.apache.impala.catalog.iceberg.IcebergCatalogUtil;
+import org.apache.impala.common.FileSystemUtil;
 import org.apache.impala.common.ImpalaRuntimeException;
 import org.apache.impala.common.PrintUtils;
 import org.apache.impala.service.BackendConfig;
@@ -61,6 +64,7 @@ import org.apache.impala.thrift.THdfsPartitionLocation;
 import org.apache.impala.thrift.THdfsStorageDescriptor;
 import org.apache.impala.thrift.THdfsTable;
 import org.apache.impala.thrift.TNetworkAddress;
+import org.apache.impala.thrift.TResultSet;
 import org.apache.impala.thrift.TIcebergCatalog;
 import org.apache.impala.thrift.TIcebergContentFileStore;
 import org.apache.impala.thrift.TIcebergFileFormat;
@@ -443,6 +447,101 @@ public class IcebergTable extends Table implements FeIcebergTable {
     return hdfsTable_;
   }
 
+  // --- FeFsTable overrides: direct implementations replacing delegation through
+  //     getFeFsTable(). These allow the eventual removal of hdfsTable_. ---
+
+  @Override
+  public String getLocation() { return icebergTableLocation_; }
+
+  @Override
+  public String getHdfsBaseDir() { return hdfsBaseDir_; }
+
+  @Override
+  public String getNullPartitionKeyValue() { return nullPartitionKeyValue_; }
+
+  @Override
+  public boolean isMarkedCached() { return isMarkedCached_; }
+
+  @Override
+  public boolean isLocationCacheable() {
+    return FileSystemUtil.isPathCacheable(new Path(icebergTableLocation_));
+  }
+
+  @Override
+  public boolean isCacheable() { return isLocationCacheable(); }
+
+  @Override
+  public FileSystemUtil.FsType getFsType() {
+    return FileSystemUtil.FsType.getFsType(new Path(hdfsBaseDir_).toUri().getScheme());
+  }
+
+  @Override
+  public ListMap<TNetworkAddress> getHostIndex() { return icebergHostIndex_; }
+
+  @Override
+  public boolean usesAvroSchemaOverride() { return avroSchema_ != null; }
+
+  @Override
+  public Set<HdfsFileFormat> getFileFormats() {
+    return Collections.singleton(IcebergUtil.toHdfsFileFormat(icebergFileFormat_));
+  }
+
+  @Override
+  public boolean hasWriteAccessToBaseDir() {
+    return hdfsTable_.hasWriteAccessToBaseDir();
+  }
+
+  @Override
+  public String getFirstLocationWithoutWriteAccess() {
+    if (!hasWriteAccessToBaseDir()) return hdfsBaseDir_;
+    return null;
+  }
+
+  @Override
+  public long getTotalHdfsBytes() {
+    return fileMetadataStats_.totalFileBytes;
+  }
+
+  @Override
+  public Collection<? extends PrunablePartition> getPartitions() {
+    return Collections.singletonList(getSyntheticPartition());
+  }
+
+  @Override
+  public Set<Long> getPartitionIds() {
+    return Collections.singleton(ICEBERG_PARTITION_ID);
+  }
+
+  @Override
+  public Map<Long, ? extends PrunablePartition> getPartitionMap() {
+    return Collections.singletonMap(ICEBERG_PARTITION_ID, getSyntheticPartition());
+  }
+
+  @Override
+  public TreeMap<LiteralExpr, Set<Long>> getPartitionValueMap(int col) {
+    return new TreeMap<>();
+  }
+
+  @Override
+  public Set<Long> getNullPartitionIds(int colIdx) {
+    return Collections.emptySet();
+  }
+
+  @Override
+  public List<? extends FeFsPartition> loadPartitions(Collection<Long> ids) {
+    if (ids.isEmpty()) return Collections.emptyList();
+    return Collections.singletonList(getSyntheticPartition());
+  }
+
+  @Override
+  public TResultSet getTableStats() {
+    return FeIcebergTable.Utils.getTableStats(this);
+  }
+
+  private IcebergSyntheticPartition getSyntheticPartition() {
+    return new IcebergSyntheticPartition(this);
+  }
+
   @Override
   public List<IcebergPartitionSpec> getPartitionSpecs() {
     Preconditions.checkState(partitionSpecs_ != null);
@@ -622,7 +721,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
                       : "Loaded Iceberg content file list");
 
       fileStore_ = IcebergFileMetadataLoader.loadContentFilesStore(
-          icebergApiTable_, fileStore_, icebergFiles, getHostIndex(),
+          icebergApiTable_, fileStore_, icebergFiles, hdfsTable_.getHostIndex(),
           Utils.requiresDataFilesInTableLocation(this), incremental, fileMetadataStats_);
       updateMetrics(fileMetadataStats_);
       partitionStats_ = Utils.loadPartitionStats(
@@ -1028,7 +1127,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
     // In most of the cases, the prefix map only contains one item for the table location.
     // Here we always send it since it's small.
     resp.table_info.setPartition_prefixes(
-        hdfsTable_.partitionLocationCompressor_.getPrefixes());
+        Collections.singletonList(hdfsBaseDir_));
 
     if (req.table_info_selector.want_partition_files) {
       // TODO(todd) we are sending the whole host index even if we returned only
