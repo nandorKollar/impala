@@ -57,6 +57,7 @@ import org.apache.impala.thrift.TCatalogObjectType;
 import org.apache.impala.thrift.TCompressionCodec;
 import org.apache.impala.thrift.TGetPartialCatalogObjectRequest;
 import org.apache.impala.thrift.TGetPartialCatalogObjectResponse;
+import org.apache.impala.thrift.TAccessLevel;
 import org.apache.impala.thrift.THdfsCompression;
 import org.apache.impala.thrift.THdfsFileFormat;
 import org.apache.impala.thrift.THdfsPartition;
@@ -77,6 +78,7 @@ import org.apache.impala.thrift.TSqlConstraints;
 import org.apache.impala.thrift.TTable;
 import org.apache.impala.thrift.TTableDescriptor;
 import org.apache.impala.thrift.TTableType;
+import org.apache.impala.util.TAccessLevelUtil;
 import org.apache.impala.util.EventSequence;
 import org.apache.impala.util.IcebergSchemaConverter;
 import org.apache.impala.util.IcebergUtil;
@@ -297,6 +299,12 @@ public class IcebergTable extends Table implements FeIcebergTable {
   private String nullPartitionKeyValue_;
   private String avroSchema_;
   private boolean isMarkedCached_;
+  private TAccessLevel accessLevel_ = TAccessLevel.NONE;
+
+  // Pending version tracking — previously delegated to hdfsTable_.
+  private long pendingVersionNumber_ = -1;
+  private final Object pendingVersionLock_ = new Object();
+  private long lastVersionSeenByTopicUpdate_ = -1;
 
   // Cached Iceberg API table object.
   private org.apache.iceberg.Table icebergApiTable_;
@@ -374,12 +382,36 @@ public class IcebergTable extends Table implements FeIcebergTable {
 
   @Override
   public void setCatalogVersion(long newVersion) {
-    // We use 'hdfsTable_' to answer CatalogServiceCatalog.doGetPartialCatalogObject(), so
-    // its version number needs to be updated as well.
-    // Use setCatalogVersionAndGet() to atomically apply pendingVersion promotion in
-    // HdfsTable and get back the effective version in a single synchronized block
-    long effectiveVersion = hdfsTable_.setCatalogVersionAndGet(newVersion);
-    super.setCatalogVersion(effectiveVersion);
+    synchronized (pendingVersionLock_) {
+      long versionToBeSet = newVersion;
+      if (pendingVersionNumber_ > newVersion) {
+        LOG.trace("Pending table version {} is higher than requested version {}",
+            pendingVersionNumber_, newVersion);
+        versionToBeSet = pendingVersionNumber_;
+      }
+      LOG.info("Setting the catalog version of {}@{} {} to {}",
+          getClass().getSimpleName(), Integer.toHexString(hashCode()),
+          getFullName(), versionToBeSet);
+      super.setCatalogVersion(versionToBeSet);
+    }
+  }
+
+  public boolean updatePendingVersion(long expectedTblVersion, long newPendingVersion) {
+    synchronized (pendingVersionLock_) {
+      if (expectedTblVersion == getCatalogVersion()) {
+        pendingVersionNumber_ = newPendingVersion;
+        return true;
+      }
+      return false;
+    }
+  }
+
+  public long getLastVersionSeenByTopicUpdate() {
+    return lastVersionSeenByTopicUpdate_;
+  }
+
+  public void setLastVersionSeenByTopicUpdate(long version) {
+    lastVersionSeenByTopicUpdate_ = version;
   }
 
   @Override
@@ -488,7 +520,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
 
   @Override
   public boolean hasWriteAccessToBaseDir() {
-    return hdfsTable_.hasWriteAccessToBaseDir();
+    return TAccessLevelUtil.impliesWriteAccess(accessLevel_);
   }
 
   @Override
@@ -926,6 +958,8 @@ public class IcebergTable extends Table implements FeIcebergTable {
     hdfsBaseDir_ = hdfsTable_.getHdfsBaseDir();
     nullPartitionKeyValue_ = hdfsTable_.getNullPartitionKeyValue();
     isMarkedCached_ = hdfsTable_.isMarkedCached();
+    accessLevel_ = hdfsTable_.hasWriteAccessToBaseDir()
+        ? TAccessLevel.READ_WRITE : TAccessLevel.READ_ONLY;
     if (hdfsTable_.usesAvroSchemaOverride()) {
       THdfsTable t = hdfsTable_.getTHdfsTable(ThriftObjectType.FULL, null);
       avroSchema_ = t.isSetAvroSchema() ? t.getAvroSchema() : null;
