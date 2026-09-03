@@ -55,6 +55,10 @@ import org.apache.impala.thrift.TCompressionCodec;
 import org.apache.impala.thrift.TGetPartialCatalogObjectRequest;
 import org.apache.impala.thrift.TGetPartialCatalogObjectResponse;
 import org.apache.impala.thrift.THdfsCompression;
+import org.apache.impala.thrift.THdfsFileFormat;
+import org.apache.impala.thrift.THdfsPartition;
+import org.apache.impala.thrift.THdfsPartitionLocation;
+import org.apache.impala.thrift.THdfsStorageDescriptor;
 import org.apache.impala.thrift.THdfsTable;
 import org.apache.impala.thrift.TIcebergCatalog;
 import org.apache.impala.thrift.TIcebergContentFileStore;
@@ -271,6 +275,11 @@ public class IcebergTable extends Table implements FeIcebergTable {
 
   // File descriptor store of all data and delete files.
   private IcebergContentFileStore fileStore_;
+
+  // Fixed partition ID for the single synthetic partition used in THdfsTable.
+  // The C++ backend looks up partitions by ID from the THdfsTable map; this constant
+  // must match the key used there and the partition_id in scan ranges.
+  public static final long ICEBERG_PARTITION_ID = 0L;
 
   // Treat iceberg table as a non-partitioned hdfs table in backend
   private HdfsTable hdfsTable_;
@@ -910,6 +919,61 @@ public class IcebergTable extends Table implements FeIcebergTable {
       Utils.updateIcebergPartitionFileFormat(this, hdfsTable);
     }
     return hdfsTable;
+  }
+
+  /**
+   * Builds a minimal THdfsPartition for the synthetic single partition. The C++ backend
+   * needs: id, fileFormat, location, and partitionKeyExprs (empty for Iceberg).
+   */
+  THdfsPartition buildSyntheticTHdfsPartition() {
+    THdfsPartition partition = new THdfsPartition(Collections.emptyList());
+    partition.setId(ICEBERG_PARTITION_ID);
+    THdfsPartitionLocation loc = new THdfsPartitionLocation();
+    loc.setPrefix_index(0);
+    loc.setSuffix("");
+    partition.setLocation(loc);
+    THdfsStorageDescriptor sd = new THdfsStorageDescriptor();
+    sd.setFileFormat(IcebergUtil.toTHdfsFileFormat(icebergFileFormat_));
+    sd.setLineDelim((byte) 0);
+    sd.setFieldDelim((byte) 0);
+    sd.setCollectionDelim((byte) 0);
+    sd.setMapKeyDelim((byte) 0);
+    sd.setEscapeChar((byte) 0);
+    sd.setQuoteChar((byte) 0);
+    sd.setBlockSize(0);
+    partition.setHdfs_storage_descriptor(sd);
+    return partition;
+  }
+
+  /**
+   * Builds a THdfsTable from scratch without delegating to hdfsTable_. Follows the
+   * pattern established by LocalIcebergTable.transformToTHdfsTable().
+   */
+  THdfsTable buildSyntheticTHdfsTable(ThriftObjectType type) {
+    THdfsPartition syntheticPartition = buildSyntheticTHdfsPartition();
+    Map<Long, THdfsPartition> partitionMap = new HashMap<>();
+    partitionMap.put(ICEBERG_PARTITION_ID, syntheticPartition);
+
+    THdfsTable tbl = new THdfsTable(
+        hdfsTable_.getHdfsBaseDir(),
+        getColumnNames(),
+        hdfsTable_.getNullPartitionKeyValue(),
+        FeFsTable.DEFAULT_NULL_COLUMN_VALUE,
+        partitionMap,
+        syntheticPartition);
+
+    if (type == ThriftObjectType.FULL) {
+      tbl.setNetwork_addresses(getHostIndex().getList());
+    }
+    tbl.setPartition_prefixes(
+        Collections.singletonList(hdfsTable_.getHdfsBaseDir()));
+
+    if (hdfsTable_.usesAvroSchemaOverride()) {
+      THdfsTable existing = hdfsTable_.getTHdfsTable(ThriftObjectType.FULL, null);
+      if (existing.isSetAvroSchema()) tbl.setAvroSchema(existing.getAvroSchema());
+    }
+
+    return tbl;
   }
 
   @Override
