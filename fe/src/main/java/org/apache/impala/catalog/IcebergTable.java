@@ -60,6 +60,7 @@ import org.apache.impala.thrift.THdfsPartition;
 import org.apache.impala.thrift.THdfsPartitionLocation;
 import org.apache.impala.thrift.THdfsStorageDescriptor;
 import org.apache.impala.thrift.THdfsTable;
+import org.apache.impala.thrift.TNetworkAddress;
 import org.apache.impala.thrift.TIcebergCatalog;
 import org.apache.impala.thrift.TIcebergContentFileStore;
 import org.apache.impala.thrift.TIcebergFileFormat;
@@ -75,6 +76,7 @@ import org.apache.impala.thrift.TTableType;
 import org.apache.impala.util.EventSequence;
 import org.apache.impala.util.IcebergSchemaConverter;
 import org.apache.impala.util.IcebergUtil;
+import org.apache.impala.util.ListMap;
 
 /**
  * Representation of an Iceberg table in the catalog cache.
@@ -283,6 +285,14 @@ public class IcebergTable extends Table implements FeIcebergTable {
 
   // Treat iceberg table as a non-partitioned hdfs table in backend
   private HdfsTable hdfsTable_;
+
+  // Standalone fields that mirror data from hdfsTable_, used by the synthetic
+  // THdfsTable builder. Once all callers are migrated, hdfsTable_ can be removed.
+  private ListMap<TNetworkAddress> icebergHostIndex_ = new ListMap<>();
+  private String hdfsBaseDir_;
+  private String nullPartitionKeyValue_;
+  private String avroSchema_;
+  private boolean isMarkedCached_;
 
   // Cached Iceberg API table object.
   private org.apache.iceberg.Table icebergApiTable_;
@@ -622,6 +632,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
           incremental ? "Loaded Iceberg file descriptors incrementally"
                       : "Loaded Iceberg file descriptors");
       setAvroSchema(msClient, msTable_, fileStore_, catalogTimeline);
+      populateStandaloneFields();
       updateLoadedState();
     } catch (Exception e) {
       throw new IcebergTableLoadingException("Error loading metadata for Iceberg table "
@@ -811,6 +822,19 @@ public class IcebergTable extends Table implements FeIcebergTable {
     }
   }
 
+  private void populateStandaloneFields() {
+    icebergHostIndex_ = hdfsTable_.getHostIndex();
+    hdfsBaseDir_ = hdfsTable_.getHdfsBaseDir();
+    nullPartitionKeyValue_ = hdfsTable_.getNullPartitionKeyValue();
+    isMarkedCached_ = hdfsTable_.isMarkedCached();
+    if (hdfsTable_.usesAvroSchemaOverride()) {
+      THdfsTable t = hdfsTable_.getTHdfsTable(ThriftObjectType.FULL, null);
+      avroSchema_ = t.isSetAvroSchema() ? t.getAvroSchema() : null;
+    } else {
+      avroSchema_ = null;
+    }
+  }
+
   @Override
   public void addColumn(Column col) {
     Preconditions.checkState(col instanceof IcebergColumn);
@@ -869,6 +893,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
     fileStore_ = IcebergContentFileStore.fromThrift(
         ticeberg.getContent_files(), null, null);
     hdfsTable_.loadFromThrift(thriftTable);
+    populateStandaloneFields();
     partitionStats_ = ticeberg.getPartition_stats();
   }
 
@@ -955,22 +980,20 @@ public class IcebergTable extends Table implements FeIcebergTable {
     partitionMap.put(ICEBERG_PARTITION_ID, syntheticPartition);
 
     THdfsTable tbl = new THdfsTable(
-        hdfsTable_.getHdfsBaseDir(),
+        hdfsBaseDir_,
         getColumnNames(),
-        hdfsTable_.getNullPartitionKeyValue(),
+        nullPartitionKeyValue_,
         FeFsTable.DEFAULT_NULL_COLUMN_VALUE,
         partitionMap,
         syntheticPartition);
 
     if (type == ThriftObjectType.FULL) {
-      tbl.setNetwork_addresses(getHostIndex().getList());
+      tbl.setNetwork_addresses(icebergHostIndex_.getList());
     }
-    tbl.setPartition_prefixes(
-        Collections.singletonList(hdfsTable_.getHdfsBaseDir()));
+    tbl.setPartition_prefixes(Collections.singletonList(hdfsBaseDir_));
 
-    if (hdfsTable_.usesAvroSchemaOverride()) {
-      THdfsTable existing = hdfsTable_.getTHdfsTable(ThriftObjectType.FULL, null);
-      if (existing.isSetAvroSchema()) tbl.setAvroSchema(existing.getAvroSchema());
+    if (avroSchema_ != null) {
+      tbl.setAvroSchema(avroSchema_);
     }
 
     return tbl;
