@@ -906,7 +906,7 @@ public class IcebergTable extends Table implements FeIcebergTable {
     TTableDescriptor desc = new TTableDescriptor(tableId, TTableType.ICEBERG_TABLE,
         getTColumnDescriptors(), numClusteringCols_, name_, db_.getName());
     desc.setIcebergTable(Utils.getTIcebergTable(this, ThriftObjectType.DESCRIPTOR_ONLY));
-    desc.setHdfsTable(transformToTHdfsTable(false, ThriftObjectType.DESCRIPTOR_ONLY));
+    desc.setHdfsTable(buildSyntheticTHdfsTable(ThriftObjectType.DESCRIPTOR_ONLY));
     return desc;
   }
 

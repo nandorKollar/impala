@@ -111,6 +111,10 @@ import org.slf4j.LoggerFactory;
 public interface FeIcebergTable extends FeFsTable {
   final static Logger LOG = LoggerFactory.getLogger(FeIcebergTable.class);
 
+    // Fixed partition ID for the single synthetic partition that Iceberg tables present
+    // to the HDFS scan infrastructure. Must match IcebergTable.ICEBERG_PARTITION_ID.
+    long ICEBERG_PARTITION_ID = IcebergTable.ICEBERG_PARTITION_ID;
+
   /** REST catalog name used for coordinator-side DML finalization. */
   default String getIcebergDmlCatalogName() { return null; }
 
@@ -1050,11 +1054,6 @@ public interface FeIcebergTable extends FeFsTable {
         Collections.sort(orderedFds);
       }
 
-      List<FeFsPartition> partitions = new ArrayList<>(
-          iceTbl.getFeFsTable().loadAllPartitions());
-      Preconditions.checkState(partitions.size() == 1);
-      FeFsPartition part = partitions.get(0);
-
       long totalBytes = 0;
       for (FileDescriptor fd : orderedFds) {
         totalBytes += fd.getFileLength();
@@ -1080,7 +1079,7 @@ public interface FeIcebergTable extends FeFsTable {
         --numFilesRemaining;
       }
       Map<Long, List<FileDescriptor>> result = new HashMap<>();
-      result.put(part.getId(), sampleFiles);
+      result.put(ICEBERG_PARTITION_ID, sampleFiles);
       return result;
     }
 

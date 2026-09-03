@@ -20,7 +20,6 @@ package org.apache.impala.planner;
 import static org.apache.impala.util.IcebergUtil.getFilePathHash;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.BitSet;
 import java.util.List;
@@ -36,6 +35,7 @@ import org.apache.impala.analysis.TableRef;
 import org.apache.impala.catalog.FeFsPartition;
 import org.apache.impala.catalog.FeFsTable;
 import org.apache.impala.catalog.FeIcebergTable;
+import org.apache.impala.catalog.IcebergSyntheticPartition;
 import org.apache.impala.catalog.FileDescriptor;
 import org.apache.impala.catalog.HdfsFileFormat;
 import org.apache.impala.catalog.IcebergFileDescriptor;
@@ -122,7 +122,7 @@ public class IcebergScanNode extends HdfsScanNode {
       long snapshotId, boolean isPartitionKeyScan,
       Map<Hash128, TIcebergDeletionVector> dataFileToDV, ScanNodeHelper helper) {
     super(id, tblRef.getDesc(), conjuncts,
-        getIcebergPartition(((FeIcebergTable)tblRef.getTable()).getFeFsTable()), tblRef,
+        getIcebergPartition((FeIcebergTable)tblRef.getTable()), tblRef,
         aggInfo, null, isPartitionKeyScan, helper);
     // Hdfs table transformed from iceberg table only has one partition
     Preconditions.checkState(partitions_.size() == 1);
@@ -211,13 +211,9 @@ public class IcebergScanNode extends HdfsScanNode {
     }
   }
 
-  /**
-   * Get partition info from FeFsTable, we treat iceberg table as an
-   * unpartitioned hdfs table
-   */
-  private static List<? extends FeFsPartition> getIcebergPartition(FeFsTable feFsTable) {
-    Collection<? extends FeFsPartition> partitions = feFsTable.loadAllPartitions();
-    return new ArrayList<>(partitions);
+  private static List<? extends FeFsPartition> getIcebergPartition(
+      FeIcebergTable iceTbl) {
+    return Collections.singletonList(new IcebergSyntheticPartition(iceTbl));
   }
 
   @Override
